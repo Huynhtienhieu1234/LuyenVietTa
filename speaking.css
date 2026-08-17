@@ -620,3 +620,99 @@
     justify-content: center;
   }
 }
+
+/* ===================================================================
+   FREE RECORDING SUB-MODE & MULTI-FORMAT AUDIO DOWNLOADS
+=================================================================== */
+.speak-submode-selector {
+  display: flex;
+  gap: 0.4rem;
+  background: var(--bg-tertiary);
+  padding: 0.3rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.submode-pill {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submode-pill.active {
+  background: var(--bg-primary);
+  color: var(--text-main);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.audio-formats-download-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--bg-card-border);
+}
+
+.audio-dl-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-audio-dl {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid var(--bg-card-border);
+  background: var(--bg-primary);
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.btn-audio-dl:hover {
+  transform: translateY(-1px);
+}
+
+.btn-dl-mp3 {
+  border-color: rgba(236, 72, 153, 0.4);
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(168, 85, 247, 0.08));
+}
+.btn-dl-mp3:hover {
+  border-color: #ec4899;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+}
+
+.btn-dl-wav {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08));
+}
+.btn-dl-wav:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.btn-dl-webm {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(245, 158, 11, 0.08));
+}
+.btn-dl-webm:hover {
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}

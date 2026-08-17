@@ -1154,6 +1154,404 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* Manage Modal Info Box & Delete All Button */
+.manage-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.manage-info-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.manage-info-content {
+  font-size: 0.825rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.manage-info-content strong {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.manage-info-content ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.manage-info-content li {
+  margin-bottom: 0.2rem;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-danger-outline:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #f87171;
+  transform: translateY(-1px);
+}
+
+/* ===================================================================
+   1-CLICK DEVICE SYNC & QR CODE STYLES (ĐỒNG BỘ THIẾT BỊ 1-CHẠM)
+=================================================================== */
+.btn-sync-accent {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12));
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--text-main);
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-sync-accent:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2));
+  border-color: #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+
+.sync-tab-nav {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-tertiary);
+  padding: 0.3rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+}
+
+.sync-tab-btn {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sync-tab-btn.active {
+  background: var(--bg-primary);
+  color: var(--text-main);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.sync-tab-pane {
+  display: none;
+}
+
+.sync-tab-pane.active {
+  display: block;
+  animation: fadeInPane 0.2s ease;
+}
+
+@keyframes fadeInPane {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.qr-sync-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* 6-Digit PIN Sync Card */
+.pin-sync-card {
+  background: var(--bg-primary);
+  border: 1.5px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.pin-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.65rem;
+}
+
+.pin-display {
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--accent-primary);
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--accent-primary);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  display: inline-block;
+  min-width: 240px;
+  user-select: all;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.12);
+}
+
+.pin-guide {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 0.85rem;
+  background: rgba(99, 102, 241, 0.06);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+.pin-input-field:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+}
+
+.qr-code-wrapper {
+  background: #ffffff;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#sync-qr-code canvas, #sync-qr-code img {
+  display: block;
+  width: 170px !important;
+  height: 170px !important;
+}
+
+.qr-sync-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.instruction-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.instruction-step strong {
+  color: var(--text-main);
+}
+
+.step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.copy-link-box {
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+}
+
+.copy-link-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.file-sync-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.file-sync-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem;
+  text-align: left;
+}
+
+.file-sync-icon {
+  font-size: 1.8rem;
+}
+
+.file-sync-info h4 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.file-sync-info p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.file-sync-info code {
+  background: var(--bg-tertiary);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--bg-card-border);
+  color: var(--text-main);
+}
+
+.btn-outline:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+}
+
+/* Custom Text Format Mode Cards */
+.format-choice-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.format-choice-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.format-choice-card:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-card-hover);
+}
+
+.format-choice-card.active {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.format-choice-card input[type="radio"] {
+  margin-top: 3px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+.format-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.format-choice-text strong {
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.format-choice-text span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 28px;
+  right: 28px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent-primary);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  border-radius: var(--radius-md);
+  padding: 0.95rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  font-weight: 600;
+  pointer-events: auto;
+  animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), toastFadeOut 0.35s ease 3.7s forwards;
+}
+
+.toast.toast-success {
+  border-color: #10B981;
+  background: linear-gradient(135deg, var(--bg-card), rgba(16, 185, 129, 0.08));
+}
+
+.toast.toast-error {
+  border-color: #EF4444;
+  background: linear-gradient(135deg, var(--bg-card), rgba(239, 68, 68, 0.08));
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(-16px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastFadeOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-16px) scale(0.92); }
+}
+
 /* ===================================================================
    RESPONSIVE DESIGN CHO ĐIỆN THOẠI & TABLET (Mobile Optimization)
 =================================================================== */

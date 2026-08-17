@@ -9,6 +9,7 @@
   <title>Luyện Viết Tiếng Anh - English Writing & Typing Practice</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="speaking.css">
+  <link rel="stylesheet" href="notification.css">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
 </head>
@@ -43,13 +44,15 @@
           </button>
         </div>
 
-        <button class="btn-icon" id="btn-toggle-sound" title="Bật/Tắt âm thanh gõ nhẹ nhàng">
-          <span id="sound-icon">🔊</span>
-          <span id="sound-text">Âm gõ: Bật</span>
-        </button>
 
         <button class="btn-icon" id="btn-theme-toggle" title="Đổi giao diện">
           🎨 <span id="theme-name">Light</span>
+        </button>
+
+        <!-- 1-Click Device Sync Button -->
+        <button class="btn-icon btn-sync-accent" id="btn-open-sync-modal"
+          title="Đồng bộ toàn bộ bài đã nạp sang điện thoại nhanh chóng qua mã QR">
+          📲 <span>Chuyển sang Điện thoại</span>
         </button>
 
         <button class="btn-icon btn-primary-accent" id="btn-custom-text"
@@ -75,6 +78,11 @@
         </select>
         <button class="pill-btn" id="btn-open-manage-modal" title="Xem và quản lý tất cả bài viết đã nạp">
           📚 Danh sách bài (<span id="my-texts-count">0</span>)
+        </button>
+
+        <button class="btn-icon" id="btn-toggle-sound" title="Bật/Tắt âm thanh gõ nhẹ nhàng">
+          <span id="sound-icon">🔊</span>
+          <span id="sound-text">Âm gõ: Bật</span>
         </button>
       </div>
 
@@ -123,7 +131,7 @@
     <section class="typing-stage-card" id="stage-card">
       <div class="stage-header">
         <div class="passage-meta">
-          <span class="badge badge-level" id="passage-level">Level A1</span>
+          <span class="badge badge-level" id="passage-level">Bài của tôi</span>
           <span class="passage-title" id="passage-title">Đoạn văn luyện tập</span>
           <button class="btn-tool" id="btn-delete-current-custom"
             style="display: none; width: 28px; height: 28px; font-size: 0.75rem; color: var(--danger-color);"
@@ -265,6 +273,16 @@
         <div class="speaking-col-right">
           <!-- Live Voice Recording Controls & Real-time Visualizer -->
           <div class="speaking-recorder-panel" id="speaking-recorder-panel">
+            <!-- Speaking Sub-mode Selection (Theo bài mẫu vs Thu âm tự do) -->
+            <div class="speak-submode-selector">
+              <button type="button" class="submode-pill active" id="btn-submode-sample">
+                📖 Luyện theo bài mẫu
+              </button>
+              <button type="button" class="submode-pill" id="btn-submode-free">
+                🎙️ Thu âm tự do (Free Speech)
+              </button>
+            </div>
+
             <!-- Live Recording Timer Badge -->
             <div class="rec-timer-badge" id="rec-timer-badge" style="display: none;">
               <span class="rec-dot"></span> <span id="rec-timer-text">REC 00:00</span>
@@ -275,7 +293,8 @@
               <div class="mic-ripple-ring ring-2"></div>
               <div class="mic-ripple-ring ring-3"></div>
 
-              <button class="btn-record-mic" id="btn-record-mic" title="Bấm để bắt đầu thu âm và nhận diện giọng nói">
+              <button type="button" class="btn-record-mic" id="btn-record-mic"
+                title="Bấm để bắt đầu thu âm và nhận diện giọng nói">
                 <span class="mic-icon" id="mic-icon">🎙️</span>
                 <span id="mic-btn-text">Bấm để nói (Record)</span>
               </button>
@@ -308,7 +327,7 @@
 
           <!-- Speech Recognition Result & Pronunciation Score -->
           <div class="speaking-result-panel" id="speaking-result-panel" style="display: none;">
-            <div class="speaking-result-header">
+            <div class="speaking-result-header" id="speaking-score-header">
               <div class="speaking-score-badge" id="speaking-score-badge">
                 🎯 Độ khớp: <span id="speaking-score-val">0%</span>
               </div>
@@ -324,16 +343,31 @@
               </div>
             </div>
 
-            <!-- Recorded Audio Output Player -->
+            <!-- Recorded Audio Output Player & Multi-Format Downloads -->
             <div class="recorded-audio-playback-box" id="recorded-audio-box" style="display: none;">
               <div class="audio-playback-header">
-                <span>🎧 <strong>Âm thanh giọng nói thu vào của bạn:</strong></span>
-                <a id="btn-download-audio" class="btn-download-audio" download="my_english_speech.webm"
-                  title="Tải file âm thanh về máy">
-                  💾 Tải file (.webm)
-                </a>
+                <span>🎧 <strong>Bản ghi âm giọng nói của bạn:</strong></span>
               </div>
-              <audio id="user-audio-player" class="custom-audio-player" controls></audio>
+
+              <audio id="user-audio-player" class="custom-audio-player" controls
+                style="width: 100%; margin: 0.5rem 0;"></audio>
+
+              <!-- Download Audio in Multiple Formats (MP3, WAV, WEBM) -->
+              <div class="audio-formats-download-section">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">💾 Tải file âm
+                  thanh:</span>
+                <div class="audio-dl-btn-group">
+                  <button type="button" class="btn-audio-dl btn-dl-mp3" id="btn-dl-mp3">
+                    🎵 Tải MP3 (.mp3)
+                  </button>
+                  <button type="button" class="btn-audio-dl btn-dl-wav" id="btn-dl-wav">
+                    🎼 Tải WAV (.wav)
+                  </button>
+                  <button type="button" class="btn-audio-dl btn-dl-webm" id="btn-dl-webm">
+                    🎙️ Tải WebM (.webm)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -431,14 +465,35 @@
       </div>
 
       <div class="form-group" style="margin-bottom: 0.85rem;">
-        <label class="form-label" for="custom-text-input">Nội dung tiếng Anh (giữ nguyên định dạng):</label>
-        <textarea id="custom-text-input" class="custom-textarea" style="min-height: 160px; line-height: 1.6;"
-          placeholder="Paste or type English content here with original paragraphs and line breaks..."></textarea>
+        <label class="form-label" for="custom-text-input">Nội dung bài luyện tiếng Anh:</label>
+        <textarea id="custom-text-input" class="custom-textarea" style="min-height: 150px; line-height: 1.6;"
+          placeholder="Paste or type English content here..."></textarea>
+      </div>
+
+      <!-- Format Mode Selection (Viết ngang liền mạch vs Giữ nguyên cấu trúc) -->
+      <div class="form-group" style="margin-bottom: 0.85rem;">
+        <label class="form-label">⚙️ Định dạng khi luyện tập:</label>
+        <div class="format-choice-grid">
+          <label class="format-choice-card active" id="lbl-format-inline">
+            <input type="radio" name="custom-format-mode" id="rad-format-inline" value="inline" checked />
+            <div class="format-choice-text">
+              <strong>➡️ Viết ngang liền mạch (Mặc định)</strong>
+              <span>Tự động nối thành đoạn văn bản liền, luyện gõ liên tục bằng phím cách.</span>
+            </div>
+          </label>
+          <label class="format-choice-card" id="lbl-format-preserve">
+            <input type="radio" name="custom-format-mode" id="rad-format-preserve" value="preserve" />
+            <div class="format-choice-text">
+              <strong>📑 Giữ nguyên cấu trúc xuống dòng</strong>
+              <span>Giữ nguyên từng dòng ngắt như mẫu gửi, cần nhấn phím Enter để xuống dòng.</span>
+            </div>
+          </label>
+        </div>
       </div>
 
       <div class="modal-actions" style="margin-top: 1.25rem;">
-        <button class="btn-action" id="btn-custom-cancel">Hủy</button>
-        <button class="btn-action btn-primary" id="btn-custom-apply">🚀 Bắt đầu luyện tập ngay</button>
+        <button type="button" class="btn-action" id="btn-custom-cancel">Hủy</button>
+        <button type="button" class="btn-action btn-primary" id="btn-custom-apply">🚀 Bắt đầu luyện tập ngay</button>
       </div>
     </div>
   </div>
@@ -447,16 +502,37 @@
   <div class="modal-backdrop" id="manage-texts-modal">
     <div class="modal-dialog" style="max-width: 680px;">
       <div class="result-header"
-        style="text-align: left; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+        style="text-align: left; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
         <div>
           <h2 class="result-title" id="manage-modal-title" style="font-size: 1.3rem;">📚 Danh sách bài viết đã nạp</h2>
-          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bất kỳ bài nào bên dưới để bắt đầu luyện tập hoặc
-            xóa bài không dùng:</p>
+          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bài bên dưới để bắt đầu luyện hoặc quản lý danh
+            sách:</p>
         </div>
-        <button class="btn-action btn-primary" id="btn-modal-add-new"
-          style="font-size: 0.825rem; padding: 0.45rem 0.85rem;">
-          ➕ Nạp thêm bài
-        </button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button type="button" class="btn-action btn-danger-outline" id="btn-delete-all-custom"
+            style="font-size: 0.825rem; padding: 0.45rem 0.85rem;" title="Xóa toàn bộ bài học đã nạp">
+            🗑️ Xóa tất cả
+          </button>
+          <button type="button" class="btn-action btn-primary" id="btn-modal-add-new"
+            style="font-size: 0.825rem; padding: 0.45rem 0.85rem;">
+            ➕ Nạp thêm bài
+          </button>
+        </div>
+      </div>
+
+      <!-- Box Thông báo & Hướng dẫn chung -->
+      <div class="manage-info-box">
+        <div class="manage-info-icon">💡</div>
+        <div class="manage-info-content">
+          <strong>Thông báo & Mẹo quản lý bài học:</strong>
+          <ul>
+            <li>Toàn bộ bài bạn nạp được <strong>tự động lưu vĩnh viễn</strong> trên trình duyệt và dùng chung cho cả
+              <strong>Luyện Viết & Luyện Nói</strong>.
+            </li>
+            <li>Để mang danh sách bài sang điện thoại hoặc máy khác, hãy dùng nút <strong>"📲 Chuyển sang Điện
+                thoại"</strong> ở thanh trên cùng.</li>
+          </ul>
+        </div>
       </div>
 
       <div class="saved-texts-list-container" id="saved-texts-list-container">
@@ -469,7 +545,129 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- 2-Way Device Sync Modal (Đồng bộ Máy tính ⟷ Điện thoại bằng Đoạn Mã / QR / File) -->
+  <div class="modal-backdrop" id="sync-modal">
+    <div class="modal-dialog" style="max-width: 560px;">
+      <div class="result-header" style="text-align: left; margin-bottom: 1.25rem;">
+        <h2 class="result-title" style="font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">
+          📲 Chuyển đổi dữ liệu Máy tính ⟷ Điện thoại
+        </h2>
+        <p class="result-subtitle">Tạo đoạn mã từ máy này rồi dán sang máy kia để nhận toàn bộ bài học ngay lập tức!</p>
+      </div>
+
+      <!-- Sync Tabs -->
+      <div class="sync-tab-nav">
+        <button class="sync-tab-btn active" id="tab-btn-export-code">📤 Tạo mã xuất (Gửi đi)</button>
+        <button class="sync-tab-btn" id="tab-btn-import-code">📥 Nhập mã (Nhận bài)</button>
+        <button class="sync-tab-btn" id="tab-btn-file">💾 Sao lưu File</button>
+      </div>
+
+      <!-- Tab 1: Export PIN & Sync Code -->
+      <div class="sync-tab-pane active" id="sync-pane-export-code">
+        <div class="pin-sync-card">
+          <div class="pin-label">🔑 Mã số đồng bộ của bạn (6 chữ số):</div>
+          <div class="pin-display" id="sync-pin-display">--- ---</div>
+          <div style="margin-top: 0.85rem;">
+            <button type="button" class="btn-action btn-primary btn-block" id="btn-copy-sync-pin"
+              style="font-size: 0.92rem; font-weight: 700;">
+              📋 Sao chép Mã Số Này
+            </button>
+          </div>
+          <div class="pin-guide">
+            💡 <strong>Rất đơn giản:</strong> Mở web trên điện thoại ➡️ Bấm <em>"📲 Chuyển sang Điện thoại"</em> ➡️ Chọn
+            tab <strong>"Nhập mã"</strong> và gõ mã 6 số này là có bài ngay!
+          </div>
+        </div>
+
+        <!-- Optional QR Quick Scan / Raw Code -->
+        <div class="qr-quick-section"
+          style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--bg-card-border);">
+          <details style="cursor: pointer;">
+            <summary style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">
+              📱 Tùy chọn khác: Quét mã QR bằng Camera hoặc sao chép mã nén
+            </summary>
+            <div style="margin-top: 0.75rem;">
+              <div class="qr-sync-card">
+                <div class="qr-code-wrapper">
+                  <div id="sync-qr-code"></div>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">Mở camera điện thoại quét mã
+                  này để nhận bài.</p>
+              </div>
+              <textarea id="sync-code-output" class="custom-textarea" readonly
+                style="min-height: 55px; font-family: var(--font-mono); font-size: 0.72rem; word-break: break-all; margin-top: 0.35rem; background: var(--bg-tertiary);"
+                placeholder="Đang tạo mã nén..."></textarea>
+              <button type="button" class="btn-action btn-sm btn-block" id="btn-copy-sync-code" style="margin-top: 0.35rem; font-size: 0.8rem;">
+                📋 Sao chép đoạn mã nén này
+              </button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- Tab 2: Import PIN & Sync Code -->
+      <div class="sync-tab-pane" id="sync-pane-import-code" style="display: none;">
+        <div class="pin-sync-card">
+          <label class="pin-label"
+            style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+            📥 Nhập Mã số 6 chữ số (hoặc dán đoạn mã) vào đây:
+          </label>
+          <input type="text" id="sync-code-input" class="custom-input pin-input-field" placeholder="Ví dụ: 849201"
+            style="text-align: center; font-size: 1.35rem; font-weight: 800; letter-spacing: 0.12em; padding: 0.8rem;" />
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.85rem;">
+            <button type="button" class="btn-action btn-primary btn-block" id="btn-apply-sync-code"
+              style="font-size: 0.95rem; font-weight: 700;">
+              🚀 Nạp Toàn Bộ Bài Học Vào Máy Ngay
+            </button>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.65rem; text-align: center;">
+            💡 Bạn có thể nhập mã 6 số (ví dụ <code>849201</code>) hoặc dán mã đồng bộ vào ô trên.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 3: File Backup / Restore -->
+      <div class="sync-tab-pane" id="sync-pane-file" style="display: none;">
+        <div class="file-sync-grid">
+          <div class="file-sync-card">
+            <div class="file-sync-icon">⬇️</div>
+            <div class="file-sync-info">
+              <h4>Xuất dữ liệu ra file</h4>
+              <p>Tải toàn bộ bài đã nạp về máy dưới dạng file <code>.json</code> nhẹ vài KB.</p>
+            </div>
+            <button class="btn-action btn-primary btn-block" id="btn-export-backup">
+              ⬇️ Tải file sao lưu (.json)
+            </button>
+          </div>
+
+          <div class="file-sync-card">
+            <div class="file-sync-icon">⬆️</div>
+            <div class="file-sync-info">
+              <h4>Khôi phục dữ liệu từ file</h4>
+              <p>Chọn file <code>.json</code> để nạp lại toàn bộ bài viết, bài nói và streak.</p>
+            </div>
+            <button class="btn-action btn-outline btn-block" id="btn-trigger-import">
+              ⬆️ Chọn file để khôi phục
+            </button>
+            <input type="file" id="backup-file-input" accept=".json" style="display: none;" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.25rem;">
+        <button class="btn-action" id="btn-sync-modal-close">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Zero-Config Sync & Audio Encoding Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
+  <script src="notification.js"></script>
   <script src="app.js"></script>
 </body>
 
