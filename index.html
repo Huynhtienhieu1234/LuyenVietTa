@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="Trang web luyện viết và gõ tiếng Anh tương tác theo đoạn văn mẫu thời gian thực, hỗ trợ giọng đọc nam/nữ, tra nghĩa và thống kê WPM chi tiết.">
+  <title>Luyện Viết Tiếng Anh - English Writing & Typing Practice</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="speaking.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
+</head>
+
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-wrapper">
+        <div class="logo-icon">✍️</div>
+        <div class="logo-text">
+          <h1>EnglishWriterAndSpeaking</h1>
+          <div class="logo-subline">
+            <span>Luyện Viết & Nói Tiếng Anh</span>
+            <span class="author-subtext">• Tác giả: <strong>KS.Huỳnh Tiến Hiểu</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="streak-badge" id="streak-badge" title="Chuỗi ngày luyện tập">
+          🔥 <span id="streak-count">1</span> ngày
+        </div>
+
+        <div class="main-mode-tabs">
+          <button class="mode-tab-btn active" id="tab-btn-writing" title="Chuyển sang chế độ Luyện Viết">
+            ✍️ Luyện Viết
+          </button>
+          <button class="mode-tab-btn" id="tab-btn-speaking" title="Chuyển sang chế độ Luyện Nói">
+            🎙️ Luyện Nói
+          </button>
+        </div>
+
+        <button class="btn-icon" id="btn-toggle-sound" title="Bật/Tắt âm thanh gõ nhẹ nhàng">
+          <span id="sound-icon">🔊</span>
+          <span id="sound-text">Âm gõ: Bật</span>
+        </button>
+
+        <button class="btn-icon" id="btn-theme-toggle" title="Đổi giao diện">
+          🎨 <span id="theme-name">Light</span>
+        </button>
+
+        <button class="btn-icon btn-primary-accent" id="btn-custom-text"
+          title="Nạp thêm đoạn văn tiếng Anh mới để luyện tập">
+          📥 Nạp bài mới
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Wrapper -->
+  <main class="main-wrapper">
+
+    <!-- Category / Submitted Texts Bar -->
+    <section class="control-bar">
+      <!-- Select Submitted Texts Dropdown & Manage Button -->
+      <div class="category-selector" id="category-pills">
+        <label for="select-saved-texts" class="select-label">
+          📑 <strong>Chọn bài đã nạp:</strong>
+        </label>
+        <select id="select-saved-texts" class="custom-select-texts" title="Chọn bài viết đã nạp để luyện tập">
+          <option value="" disabled selected>-- Chưa có bài viết --</option>
+        </select>
+        <button class="pill-btn" id="btn-open-manage-modal" title="Xem và quản lý tất cả bài viết đã nạp">
+          📚 Danh sách bài (<span id="my-texts-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Writing Helper Badge -->
+      <div class="writing-mode-tag" id="current-mode-tag">
+        ✍️ <strong>Chế độ Luyện Viết Chuẩn</strong>
+      </div>
+    </section>
+
+    <!-- Stats Ribbon -->
+    <section class="stats-ribbon">
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Tốc độ (WPM)</div>
+          <div class="stat-value" id="stat-wpm">0</div>
+        </div>
+        <div class="stat-icon">⚡</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Độ chính xác</div>
+          <div class="stat-value" id="stat-acc">100%</div>
+        </div>
+        <div class="stat-icon">🎯</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Lỗi sai</div>
+          <div class="stat-value" id="stat-errors" style="color: var(--danger-color);">0</div>
+        </div>
+        <div class="stat-icon">❌</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Thời gian</div>
+          <div class="stat-value" id="stat-time">00:00</div>
+        </div>
+        <div class="stat-icon">⏱️</div>
+      </div>
+    </section>
+
+    <!-- Interactive Typing Workspace -->
+    <section class="typing-stage-card" id="stage-card">
+      <div class="stage-header">
+        <div class="passage-meta">
+          <span class="badge badge-level" id="passage-level">Level A1</span>
+          <span class="passage-title" id="passage-title">Đoạn văn luyện tập</span>
+          <button class="btn-tool" id="btn-delete-current-custom"
+            style="display: none; width: 28px; height: 28px; font-size: 0.75rem; color: var(--danger-color);"
+            title="Xóa bài viết này khỏi bộ nhớ">
+            🗑️
+          </button>
+        </div>
+
+        <div class="stage-tools">
+          <!-- Voice Selector -->
+          <div class="voice-selector-wrapper">
+            <span class="voice-label">Giọng đọc:</span>
+            <select id="voice-gender-select" class="voice-select" title="Chọn giọng phát âm tiếng Anh">
+              <option value="female">👩 Nữ (Female US/UK)</option>
+              <option value="male">👨 Nam (Male US/UK)</option>
+            </select>
+          </div>
+
+          <button class="btn-tool" id="btn-toggle-hint" title="Bật/Tắt hiển thị chữ mẫu gợi ý">
+            👁️ Gợi ý: Bật
+          </button>
+          <button class="btn-tool" id="btn-speak-all" title="Nghe phát âm toàn bộ đoạn văn">
+            🔊 Phát âm cả bài
+          </button>
+          <button class="btn-tool" id="btn-font-size-dec" title="Giảm cỡ chữ">
+            A-
+          </button>
+          <button class="btn-tool" id="btn-font-size-inc" title="Tăng cỡ chữ">
+            A+
+          </button>
+          <button class="btn-tool" id="btn-random-text" title="Đổi bài ngẫu nhiên">
+            🎲 Đổi bài
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Typing Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar-fill" id="progress-bar-fill"></div>
+      </div>
+
+      <!-- Vietnamese Telex / IME Warning Alert -->
+      <div class="ime-alert-banner" id="ime-alert-banner" style="display: none;">
+        <div class="ime-alert-content">
+          <span class="ime-alert-icon">⚠️</span>
+          <div class="ime-alert-text">
+            <strong>Phát hiện bộ gõ Tiếng Việt (Telex/VNI) đang bật:</strong> Hãy chuyển sang chế độ gõ tiếng Anh (nhấn
+            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> hoặc <kbd>Alt</kbd> + <kbd>Z</kbd> / chuyển sang <kbd>ENG</kbd>) để không
+            bị dính dấu từ.
+          </div>
+        </div>
+        <button class="ime-alert-close" id="btn-close-ime-alert" title="Đóng thông báo">✕</button>
+      </div>
+
+      <!-- Typing Area Container -->
+      <div class="typing-box-container" id="typing-container" tabindex="0">
+        <!-- Hidden input for mobile keyboard and keystroke trapping -->
+        <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off"
+          spellcheck="false">
+
+        <!-- Smooth Caret Indicator -->
+        <div class="custom-caret" id="custom-caret"></div>
+
+        <!-- Rendered Text Characters -->
+        <div class="typing-display" id="typing-display">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Overlay to prompt focus -->
+        <div class="focus-overlay" id="focus-overlay">
+          <span>👆 Bấm vào đây hoặc gõ phím bất kỳ để bắt đầu luyện viết</span>
+        </div>
+      </div>
+
+      <!-- Stage Bottom Action Bar -->
+      <div class="stage-footer">
+        <div class="footer-left-tools">
+          <button class="btn-action" id="btn-restart" title="Làm lại bài này (Tab + Enter)">
+            🔄 Làm lại (Restart)
+          </button>
+          <button class="btn-action" id="btn-next" title="Bài tiếp theo">
+            ⏭️ Bài tiếp theo
+          </button>
+        </div>
+
+        <div class="footer-hint" style="font-size: 0.8rem; color: var(--text-muted);">
+          Mẹo: Nhấn phím <code>Tab</code> + <code>Enter</code> để nhanh chóng bắt đầu lại
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Speaking Workspace (Giao diện Luyện Nói Chia 2 Cột) -->
+    <section class="speaking-stage-card" id="speaking-stage-card" style="display: none;">
+      <div class="speaking-two-column-layout">
+        <!-- CỘT 1 (BÊN TRÁI): ĐOẠN VĂN MẪU & CÔNG CỤ ĐỌC MẪU -->
+        <div class="speaking-col-left">
+          <div class="speaking-header-box">
+            <div class="speaking-meta-row">
+              <span class="badge badge-level" id="speak-passage-level">Level A1</span>
+              <h2 class="speaking-passage-title" id="speak-passage-title">Bài luyện nói</h2>
+            </div>
+
+            <div class="speaking-tools-toolbar">
+              <!-- Voice Selector -->
+              <div class="voice-selector-wrapper">
+                <span class="voice-label">Giọng:</span>
+                <select id="speak-voice-gender-select" class="voice-select" title="Chọn giọng mẫu tiếng Anh">
+                  <option value="female">👩 Nữ (US)</option>
+                  <option value="male">👨 Nam (US)</option>
+                </select>
+              </div>
+
+              <!-- Speed Selector -->
+              <div class="voice-selector-wrapper">
+                <span class="voice-label">Tốc độ:</span>
+                <select id="speak-rate-select" class="voice-select" title="Tốc độ phát âm mẫu">
+                  <option value="1.0">1.0x</option>
+                  <option value="0.8">0.8x</option>
+                  <option value="0.6">0.6x</option>
+                </select>
+              </div>
+
+              <button class="btn-speak-sample" id="btn-speak-listen-sample" title="Nghe phát âm mẫu từ giọng bản xứ">
+                🔊 Nghe mẫu
+              </button>
+            </div>
+          </div>
+
+          <!-- Target Text to Speak -->
+          <div class="speaking-target-box">
+            <div class="speaking-target-label">📖 Đoạn văn cần luyện nói:</div>
+            <div class="speaking-target-text" id="speaking-target-text">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- CỘT 2 (BÊN PHẢI): KHU VỰC THU ÂM, SÓNG ÂM & KẾT QUẢ ĐÁNH GIÁ -->
+        <div class="speaking-col-right">
+          <!-- Live Voice Recording Controls & Real-time Visualizer -->
+          <div class="speaking-recorder-panel" id="speaking-recorder-panel">
+            <!-- Live Recording Timer Badge -->
+            <div class="rec-timer-badge" id="rec-timer-badge" style="display: none;">
+              <span class="rec-dot"></span> <span id="rec-timer-text">REC 00:00</span>
+            </div>
+
+            <div class="mic-button-wrapper">
+              <div class="mic-ripple-ring ring-1"></div>
+              <div class="mic-ripple-ring ring-2"></div>
+              <div class="mic-ripple-ring ring-3"></div>
+
+              <button class="btn-record-mic" id="btn-record-mic" title="Bấm để bắt đầu thu âm và nhận diện giọng nói">
+                <span class="mic-icon" id="mic-icon">🎙️</span>
+                <span id="mic-btn-text">Bấm để nói (Record)</span>
+              </button>
+            </div>
+
+            <!-- Real-time Live Audio Waveform Canvas -->
+            <div class="visualizer-wrapper" id="visualizer-wrapper" style="display: none;">
+              <canvas id="mic-visualizer-canvas" class="mic-visualizer-canvas" width="400" height="50"></canvas>
+              <div class="live-volume-indicator">
+                <div class="live-volume-fill" id="live-volume-fill"></div>
+              </div>
+            </div>
+
+            <!-- Animated Soundwave equalizer bars -->
+            <div class="soundwave-anim-container" id="soundwave-anim-container" style="display: none;">
+              <div class="soundwave-bar bar-1"></div>
+              <div class="soundwave-bar bar-2"></div>
+              <div class="soundwave-bar bar-3"></div>
+              <div class="soundwave-bar bar-4"></div>
+              <div class="soundwave-bar bar-5"></div>
+              <div class="soundwave-bar bar-6"></div>
+              <div class="soundwave-bar bar-7"></div>
+              <div class="soundwave-bar bar-8"></div>
+            </div>
+
+            <div class="recorder-status" id="recorder-status">
+              Nhấn nút micro ở trên, cho phép truy cập micro và đọc to đoạn văn mẫu bên trái.
+            </div>
+          </div>
+
+          <!-- Speech Recognition Result & Pronunciation Score -->
+          <div class="speaking-result-panel" id="speaking-result-panel" style="display: none;">
+            <div class="speaking-result-header">
+              <div class="speaking-score-badge" id="speaking-score-badge">
+                🎯 Độ khớp: <span id="speaking-score-val">0%</span>
+              </div>
+              <div class="speaking-score-verdict" id="speaking-score-verdict">
+                <!-- Verdict message -->
+              </div>
+            </div>
+
+            <div class="recognized-text-box">
+              <div class="recognized-label">🗣️ Giọng nói của bạn nhận diện được:</div>
+              <div class="recognized-content" id="recognized-content">
+                <!-- Words comparison -->
+              </div>
+            </div>
+
+            <!-- Recorded Audio Output Player -->
+            <div class="recorded-audio-playback-box" id="recorded-audio-box" style="display: none;">
+              <div class="audio-playback-header">
+                <span>🎧 <strong>Âm thanh giọng nói thu vào của bạn:</strong></span>
+                <a id="btn-download-audio" class="btn-download-audio" download="my_english_speech.webm"
+                  title="Tải file âm thanh về máy">
+                  💾 Tải file (.webm)
+                </a>
+              </div>
+              <audio id="user-audio-player" class="custom-audio-player" controls></audio>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- History & Performance Tracker -->
+    <section class="history-section">
+      <div class="history-header">
+        <h3>📊 Lịch sử luyện tập gần đây</h3>
+        <button class="btn-icon" id="btn-clear-history" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">
+          🗑️ Xóa lịch sử
+        </button>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Thời gian</th>
+              <th>Bài viết</th>
+              <th>Chế độ</th>
+              <th>Tốc độ</th>
+              <th>Chính xác</th>
+              <th>Số lỗi</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- App Footer / Author Credit -->
+    <footer class="app-page-footer">
+      <p>Ứng dụng Luyện Viết & Nói Tiếng Anh • Tác giả: <strong>KS.Huỳnh Tiến Hiểu</strong></p>
+    </footer>
+
+  </main>
+
+  <!-- Summary / Result Modal -->
+  <div class="modal-backdrop" id="result-modal">
+    <div class="modal-dialog">
+      <div class="result-header">
+        <div class="result-badge" id="res-badge">🏆</div>
+        <h2 class="result-title" id="res-title">Hoàn thành xuất sắc!</h2>
+        <p class="result-subtitle" id="res-subtitle">Bạn đã hoàn thành đoạn văn luyện tập.</p>
+      </div>
+
+      <div class="result-stats-grid">
+        <div class="result-card">
+          <div class="label">Tốc độ gõ (WPM)</div>
+          <div class="value" id="res-wpm">0</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Độ chính xác</div>
+          <div class="value" id="res-acc">0%</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Thời gian hoàn thành</div>
+          <div class="value" id="res-time" style="font-size: 1.5rem;">00:00</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Tổng số lỗi sai</div>
+          <div class="value" id="res-errors" style="color: var(--danger-color);">0</div>
+        </div>
+      </div>
+
+      <div class="mistakes-review" id="res-mistakes-box" style="display: none;">
+        <div class="mistakes-title">⚠️ Các từ đã gõ sai:</div>
+        <div id="res-mistakes-list"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-action" id="btn-modal-retry">🔄 Luyện lại bài này</button>
+        <button class="btn-action btn-primary" id="btn-modal-next">Bài tiếp theo ➡️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Text Input Modal (Nạp dữ liệu luyện viết & nói) -->
+  <div class="modal-backdrop" id="custom-text-modal">
+    <div class="modal-dialog">
+      <div class="result-header" style="text-align: left; margin-bottom: 1.25rem;">
+        <h2 class="result-title" id="custom-modal-title" style="font-size: 1.3rem;">📥 Nạp bài luyện tập</h2>
+        <p class="result-subtitle" id="custom-modal-subtitle">Dán bài tiếng Anh của bạn (hỗ trợ giữ nguyên định dạng
+          xuống dòng, đoạn văn & tự động lưu):</p>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0.85rem;">
+        <label class="form-label" for="custom-title-input">Tên bài / Tiêu đề:</label>
+        <input type="text" id="custom-title-input" class="custom-input"
+          placeholder="Ví dụ: My English Essay, Speaking Topic 1...">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0.85rem;">
+        <label class="form-label" for="custom-text-input">Nội dung tiếng Anh (giữ nguyên định dạng):</label>
+        <textarea id="custom-text-input" class="custom-textarea" style="min-height: 160px; line-height: 1.6;"
+          placeholder="Paste or type English content here with original paragraphs and line breaks..."></textarea>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.25rem;">
+        <button class="btn-action" id="btn-custom-cancel">Hủy</button>
+        <button class="btn-action btn-primary" id="btn-custom-apply">🚀 Bắt đầu luyện tập ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Saved Texts Modal (Danh sách tất cả bài đã nạp) -->
+  <div class="modal-backdrop" id="manage-texts-modal">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="result-header"
+        style="text-align: left; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h2 class="result-title" id="manage-modal-title" style="font-size: 1.3rem;">📚 Danh sách bài viết đã nạp</h2>
+          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bất kỳ bài nào bên dưới để bắt đầu luyện tập hoặc
+            xóa bài không dùng:</p>
+        </div>
+        <button class="btn-action btn-primary" id="btn-modal-add-new"
+          style="font-size: 0.825rem; padding: 0.45rem 0.85rem;">
+          ➕ Nạp thêm bài
+        </button>
+      </div>
+
+      <div class="saved-texts-list-container" id="saved-texts-list-container">
+        <!-- Rendered dynamically via JS -->
+      </div>
+
+      <div class="modal-actions" style="margin-top: 1.25rem;">
+        <button class="btn-action" id="btn-manage-close">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+
+</html>
