@@ -387,11 +387,12 @@ class TypingApp {
         this.dom.syncPinDisplay.textContent = pin.slice(0, 3) + ' ' + pin.slice(3);
       }
 
-      // Tải dữ liệu lên kênh PIN ntfy công khai (tự động xóa sau 24h, miễn phí 100%)
+      // Tải dữ liệu lên kênh PIN ntfy công khai (tự động lưu trong 24h, miễn phí 100%)
       try {
         fetch(`https://ntfy.sh/eng_sync_${pin}`, {
           method: 'POST',
-          body: jsonStr
+          body: jsonStr,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         }).catch(e => console.warn('PIN publish:', e));
       } catch (e) {}
 
@@ -473,7 +474,7 @@ class TypingApp {
   async applySyncCode() {
     const rawCode = (this.dom.syncCodeInput.value || '').trim();
     if (!rawCode) {
-      Notify.warning('Vui lòng nhập mã 6 số (ví dụ: 849201) hoặc dán đoạn mã đồng bộ.');
+      Notify.warning('Vui lòng nhập mã 6 số (ví dụ: 849 201) hoặc dán đoạn mã đồng bộ.');
       if (this.dom.syncCodeInput) this.dom.syncCodeInput.focus();
       return;
     }
@@ -481,44 +482,38 @@ class TypingApp {
     // Trường hợp 1: Người dùng nhập Mã PIN 6 chữ số
     const cleanPin = rawCode.replace(/\D/g, '');
     if (cleanPin.length === 6 && !rawCode.startsWith('SYNC-')) {
-      Notify.info(`⏳ Đang tải dữ liệu từ mã số ${cleanPin}...`);
+      Notify.info(`⏳ Đang tìm và nạp dữ liệu từ mã số ${cleanPin}...`);
       try {
-        const response = await fetch(`https://ntfy.sh/eng_sync_${cleanPin}/raw?poll=1`);
-        if (response.ok) {
-          const rawText = await response.text();
-          if (rawText && rawText.trim()) {
-            const success = this.importFromCompactString(rawText.trim(), true);
-            if (success) {
-              this.dom.syncCodeInput.value = '';
-              if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
-              return;
+        // Đọc dữ liệu với since=24h để lấy đầy đủ tin nhắn trong 24 giờ qua
+        const jsonResp = await fetch(`https://ntfy.sh/eng_sync_${cleanPin}/json?poll=1&since=24h`);
+        if (!jsonResp.ok) throw new Error('Không thể kết nối máy chủ ntfy');
+        
+        const text = await jsonResp.text();
+        const lines = text.trim().split('\n').filter(Boolean);
+        
+        let foundPayload = null;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          try {
+            const obj = JSON.parse(lines[i]);
+            if (obj && obj.message) {
+              foundPayload = obj.message;
+              break;
             }
+          } catch (e) {}
+        }
+
+        if (foundPayload) {
+          const success = this.importFromCompactString(foundPayload, true);
+          if (success) {
+            this.dom.syncCodeInput.value = '';
+            if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
+            return;
           }
         }
 
-        // Fallback đọc dạng json poll
-        const jsonResp = await fetch(`https://ntfy.sh/eng_sync_${cleanPin}/json?poll=1`);
-        if (jsonResp.ok) {
-          const text = await jsonResp.text();
-          const lines = text.trim().split('\n').filter(Boolean);
-          for (let i = lines.length - 1; i >= 0; i--) {
-            try {
-              const obj = JSON.parse(lines[i]);
-              if (obj && obj.message) {
-                const success = this.importFromCompactString(obj.message, true);
-                if (success) {
-                  this.dom.syncCodeInput.value = '';
-                  if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
-                  return;
-                }
-              }
-            } catch (e) {}
-          }
-        }
-
-        throw new Error('Mã PIN không có dữ liệu');
+        throw new Error('Mã PIN chưa có dữ liệu');
       } catch (err) {
-        Notify.error(`Không tìm thấy dữ liệu cho mã số "${cleanPin}".\nHãy đảm bảo máy gửi đã bấm "🔄 Mã đồng bộ" và mã số chưa hết hạn nhé!`);
+        Notify.error(`Không tìm thấy dữ liệu cho mã số "${cleanPin}".\nHãy đảm bảo máy gửi đã bấm "🔄 Mã đồng bộ" và lấy mã mới nhất nhé!`);
         return;
       }
     }
