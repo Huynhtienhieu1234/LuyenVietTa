@@ -231,21 +231,42 @@ class TypingApp {
     if (raw.includes('#sync=')) raw = raw.split('#sync=')[1];
 
     try {
-      let jsonStr = '';
-      if (typeof LZString !== 'undefined') {
-        jsonStr = LZString.decompressFromBase64(raw) || 
-                  LZString.decompressFromEncodedURIComponent(raw) || 
-                  decodeURIComponent(raw);
-      } else {
-        jsonStr = decodeURIComponent(raw);
+      let data = null;
+
+      // 1. Thử parse trực tiếp nếu chuỗi là JSON thuần (Array / Object)
+      if (raw.startsWith('[') || raw.startsWith('{')) {
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          data = null;
+        }
       }
 
-      if (!jsonStr) {
+      // 2. Nếu chưa parse được, thử giải nén bằng LZString hoặc decodeURI
+      if (!data) {
+        let jsonStr = '';
+        if (typeof LZString !== 'undefined') {
+          jsonStr = LZString.decompressFromBase64(raw) || 
+                    LZString.decompressFromEncodedURIComponent(raw);
+        }
+        if (!jsonStr) {
+          try {
+            jsonStr = decodeURIComponent(raw);
+          } catch (e) {
+            jsonStr = raw;
+          }
+        }
+
+        if (jsonStr) {
+          data = JSON.parse(jsonStr);
+        }
+      }
+
+      if (!data) {
         if (showAlertOnError) Notify.error('Đoạn mã không hợp lệ hoặc bị thiếu ký tự. Vui lòng sao chép lại toàn bộ đoạn mã!');
         return false;
       }
 
-      const data = JSON.parse(jsonStr);
       let importedCount = 0;
 
       // Hỗ trợ Định dạng Tuple Array mới: [streak, [ [title, text, isPreserve], ... ]]
@@ -462,20 +483,40 @@ class TypingApp {
     if (cleanPin.length === 6 && !rawCode.startsWith('SYNC-')) {
       Notify.info(`⏳ Đang tải dữ liệu từ mã số ${cleanPin}...`);
       try {
-        const response = await fetch(`https://ntfy.sh/eng_sync_${cleanPin}/json?poll=1`);
-        if (!response.ok) throw new Error('Không thể kết nối máy chủ');
-        const jsonLine = await response.json();
-
-        if (jsonLine && jsonLine.message) {
-          const success = this.importFromCompactString(jsonLine.message, true);
-          if (success) {
-            this.dom.syncCodeInput.value = '';
-            if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
+        const response = await fetch(`https://ntfy.sh/eng_sync_${cleanPin}/raw?poll=1`);
+        if (response.ok) {
+          const rawText = await response.text();
+          if (rawText && rawText.trim()) {
+            const success = this.importFromCompactString(rawText.trim(), true);
+            if (success) {
+              this.dom.syncCodeInput.value = '';
+              if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
+              return;
+            }
           }
-          return;
-        } else {
-          throw new Error('Mã PIN không có dữ liệu');
         }
+
+        // Fallback đọc dạng json poll
+        const jsonResp = await fetch(`https://ntfy.sh/eng_sync_${cleanPin}/json?poll=1`);
+        if (jsonResp.ok) {
+          const text = await jsonResp.text();
+          const lines = text.trim().split('\n').filter(Boolean);
+          for (let i = lines.length - 1; i >= 0; i--) {
+            try {
+              const obj = JSON.parse(lines[i]);
+              if (obj && obj.message) {
+                const success = this.importFromCompactString(obj.message, true);
+                if (success) {
+                  this.dom.syncCodeInput.value = '';
+                  if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
+                  return;
+                }
+              }
+            } catch (e) {}
+          }
+        }
+
+        throw new Error('Mã PIN không có dữ liệu');
       } catch (err) {
         Notify.error(`Không tìm thấy dữ liệu cho mã số "${cleanPin}".\nHãy đảm bảo máy gửi đã bấm "🔄 Mã đồng bộ" và mã số chưa hết hạn nhé!`);
         return;
