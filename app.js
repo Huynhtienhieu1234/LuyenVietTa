@@ -1140,6 +1140,34 @@ class TypingApp {
     window.speechSynthesis.speak(utterance);
   }
 
+  // Live Microphone Recording & Speech-to-Text Recognition
+  switchSpeakingSubmode(mode) {
+    this.speakingSubMode = mode;
+    if (mode === 'free') {
+      if (this.dom.btnSubmodeFree) this.dom.btnSubmodeFree.classList.add('active');
+      if (this.dom.btnSubmodeSample) this.dom.btnSubmodeSample.classList.remove('active');
+      if (this.dom.speakingScoreHeader) this.dom.speakingScoreHeader.style.display = 'none';
+      if (this.dom.recorderStatus) {
+        this.dom.recorderStatus.textContent = '🎙️ Chế độ thu âm tự do: Bấm "Bấm để nói" để ghi âm bài nói, thuyết trình hoặc podcast của bạn!';
+      }
+    } else {
+      if (this.dom.btnSubmodeSample) this.dom.btnSubmodeSample.classList.add('active');
+      if (this.dom.btnSubmodeFree) this.dom.btnSubmodeFree.classList.remove('active');
+      if (this.dom.speakingScoreHeader) this.dom.speakingScoreHeader.style.display = 'flex';
+      if (this.dom.recorderStatus) {
+        this.dom.recorderStatus.textContent = 'Nhấn nút micro ở trên, cho phép truy cập micro và đọc to đoạn văn mẫu bên trái.';
+      }
+    }
+  }
+
+  async toggleRecording() {
+    if (this.isRecording) {
+      this.stopRecording();
+    } else {
+      await this.startRecording();
+    }
+  }
+
   async startRecording() {
     if (this.speakingSubMode === 'sample' && !this.currentSpeakingPassage) {
       Notify.warning('Vui lòng nạp hoặc chọn một bài luyện nói tiếng Anh trước khi thu âm!');
@@ -1172,6 +1200,12 @@ class TypingApp {
       this.startAudioVisualizer(stream);
 
       this.recSeconds = 0;
+      if (this.dom.recTimerText) this.dom.recTimerText.textContent = 'REC 00:00';
+      if (this.dom.recTimerBadge) this.dom.recTimerBadge.style.display = 'inline-flex';
+      if (this.dom.visualizerWrapper) this.dom.visualizerWrapper.style.display = 'flex';
+      if (this.dom.soundwaveAnimContainer) this.dom.soundwaveAnimContainer.style.display = 'flex';
+      if (this.dom.speakingRecorderPanel) this.dom.speakingRecorderPanel.classList.add('is-active-recording');
+
       if (this.recTimerInterval) clearInterval(this.recTimerInterval);
       this.recTimerInterval = setInterval(() => {
         this.recSeconds++;
@@ -1191,11 +1225,16 @@ class TypingApp {
           let transcript = '';
           for (let i = 0; i < event.results.length; i++) transcript += event.results[i][0].transcript + ' ';
           this.lastSpokenTranscript = transcript.trim();
+          if (this.dom.recorderStatus) {
+            this.dom.recorderStatus.textContent = `🎙️ Đang nghe: "${this.lastSpokenTranscript}"`;
+          }
         };
         this.speechRecognition.start();
       }
 
       this.isRecording = true;
+      if (this.dom.btnRecordMic) this.dom.btnRecordMic.classList.add('is-recording');
+      if (this.dom.micBtnText) this.dom.micBtnText.textContent = '⏹️ Dừng thu âm';
       if (this.dom.recorderStatus) {
         this.dom.recorderStatus.textContent = this.speakingSubMode === 'free'
           ? '🎙️ Đang thu âm tự do... Hãy nói thoải mái!'
@@ -1227,6 +1266,16 @@ class TypingApp {
         if (!this.isRecording) return;
         this.visualizerAnimId = requestAnimationFrame(draw);
         this.micAnalyser.getByteFrequencyData(dataArray);
+
+        // Calculate volume for VU meter
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+        const avg = sum / bufferLength;
+        const volumePercent = Math.min(100, Math.round((avg / 128) * 100));
+        if (this.dom.liveVolumeFill) {
+          this.dom.liveVolumeFill.style.width = `${volumePercent}%`;
+        }
+
         ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         const barWidth = (canvas.width / bufferLength) * 2.2;
@@ -1244,15 +1293,71 @@ class TypingApp {
     }
   }
 
+  stopRecording() {
+    this.isRecording = false;
+    if (this.dom.btnRecordMic) this.dom.btnRecordMic.classList.remove('is-recording');
+    if (this.dom.micBtnText) this.dom.micBtnText.textContent = 'Bấm để nói (Record)';
+    if (this.dom.recorderStatus) {
+      this.dom.recorderStatus.textContent = '✅ Đã hoàn thành thu âm. Bạn có thể nghe lại và tải file âm thanh (MP3, WAV, WebM) bên dưới!';
+    }
+
+    if (this.recTimerInterval) {
+      clearInterval(this.recTimerInterval);
+      this.recTimerInterval = null;
+    }
+    if (this.visualizerAnimId) {
+      cancelAnimationFrame(this.visualizerAnimId);
+      this.visualizerAnimId = null;
+    }
+    if (this.micAudioCtx && this.micAudioCtx.state !== 'closed') {
+      try { this.micAudioCtx.close(); } catch (e) {}
+    }
+
+    if (this.dom.recTimerBadge) this.dom.recTimerBadge.style.display = 'none';
+    if (this.dom.visualizerWrapper) this.dom.visualizerWrapper.style.display = 'none';
+    if (this.dom.soundwaveAnimContainer) this.dom.soundwaveAnimContainer.style.display = 'none';
+    if (this.dom.speakingRecorderPanel) this.dom.speakingRecorderPanel.classList.remove('is-active-recording');
+
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+
+    if (this.speechRecognition) {
+      try {
+        this.speechRecognition.stop();
+      } catch (e) {}
+    }
+
+    setTimeout(() => {
+      this.evaluatePronunciation(this.lastSpokenTranscript);
+    }, 300);
+  }
+
   evaluatePronunciation(spokenText) {
     if (this.dom.speakingResultPanel) this.dom.speakingResultPanel.style.display = 'flex';
-    if (this.speakingSubMode === 'free') return;
+    if (this.speakingSubMode === 'free') {
+      if (this.dom.speakingScoreHeader) this.dom.speakingScoreHeader.style.display = 'none';
+      if (this.dom.recognizedContent) {
+        this.dom.recognizedContent.innerHTML = spokenText
+          ? `<p style="font-size: 1.05rem; line-height: 1.6; color: var(--text-main); font-weight: 500;">${spokenText}</p>`
+          : '<span style="color: var(--text-muted); font-style: italic;">(Chưa phát hiện giọng nói rõ ràng)</span>';
+      }
+      return;
+    }
+
     if (this.dom.speakingScoreHeader) this.dom.speakingScoreHeader.style.display = 'flex';
 
     if (!spokenText) {
-        if (this.dom.speakingScoreVal) this.dom.speakingScoreVal.textContent = '0%';
-        return;
+      if (this.dom.speakingScoreVal) this.dom.speakingScoreVal.textContent = '0%';
+      if (this.dom.speakingScoreBadge) this.dom.speakingScoreBadge.style.color = 'var(--danger-color)';
+      if (this.dom.speakingScoreVerdict) this.dom.speakingScoreVerdict.textContent = 'Chưa nhận diện được giọng nói tiếng Anh. Hãy thử lại gần micro hơn nhé!';
+      if (this.dom.recognizedContent) {
+        this.dom.recognizedContent.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">(Không có giọng nói nào được nhận diện)</span>';
+      }
+      return;
     }
+
+    if (!this.currentSpeakingPassage) return;
 
     const clean = (str) => str.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/).filter(Boolean);
     const targetWords = clean(this.currentSpeakingPassage.text);
@@ -1276,13 +1381,13 @@ class TypingApp {
     if (this.dom.speakingScoreBadge && this.dom.speakingScoreVerdict) {
       if (score >= 80) {
         this.dom.speakingScoreBadge.style.color = 'var(--success-color)';
-        this.dom.speakingScoreVerdict.textContent = '🌟 Xuất sắc!';
+        this.dom.speakingScoreVerdict.textContent = '🌟 Xuất sắc! Phát âm và độ chính xác rất chuẩn!';
       } else if (score >= 50) {
         this.dom.speakingScoreBadge.style.color = 'var(--warning-color)';
-        this.dom.speakingScoreVerdict.textContent = '👍 Khá tốt!';
+        this.dom.speakingScoreVerdict.textContent = '👍 Khá tốt! Hãy nghe lại bản mẫu và luyện thêm các từ gạch chân đỏ nhé.';
       } else {
         this.dom.speakingScoreBadge.style.color = 'var(--danger-color)';
-        this.dom.speakingScoreVerdict.textContent = '💪 Cố lên!';
+        this.dom.speakingScoreVerdict.textContent = '💪 Cố lên! Hãy nghe phát âm mẫu ở trên và đọc lại từng từ rõ ràng hơn nhé.';
       }
     }
   }
@@ -1639,7 +1744,6 @@ class TypingApp {
 
     this.currentIndexInText = 0;
     this.applyHintState();
-    this.applyAutoSpeakWordState();
     this.updateCaretPosition();
   }
 
