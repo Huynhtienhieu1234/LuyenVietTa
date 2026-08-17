@@ -335,10 +335,7 @@ class TypingApp {
   }
 
   openSyncModal() {
-    if (this.savedCustomTexts.length === 0 && this.savedSpeakingTexts.length === 0) {
-      Notify.warning('Bạn chưa có bài nạp nào để chuyển. Hãy nạp ít nhất 1 bài trước nhé!');
-      return;
-    }
+    const hasTexts = this.savedCustomTexts.length > 0 || this.savedSpeakingTexts.length > 0;
 
     // Đóng gói dữ liệu tối giản dạng Tuple Array
     const streak = localStorage.getItem('eng_write_streak') || '1';
@@ -360,52 +357,67 @@ class TypingApp {
     const compactData = [parseInt(streak, 10), uniqueTexts];
     const jsonStr = JSON.stringify(compactData);
 
-    // 1. Tạo Mã PIN 6 Chữ Số Siêu Ngắn Gọn (Ví dụ: 849 201)
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    this.currentSyncPin = pin;
+    if (hasTexts) {
+      // 1. Tạo Mã PIN 6 Chữ Số Siêu Ngắn Gọn (Ví dụ: 849 201)
+      const pin = Math.floor(100000 + Math.random() * 900000).toString();
+      this.currentSyncPin = pin;
 
-    if (this.dom.syncPinDisplay) {
-      this.dom.syncPinDisplay.textContent = pin.slice(0, 3) + ' ' + pin.slice(3);
-    }
+      if (this.dom.syncPinDisplay) {
+        this.dom.syncPinDisplay.textContent = pin.slice(0, 3) + ' ' + pin.slice(3);
+      }
 
-    // Tải dữ liệu lên kênh PIN ntfy công khai (tự động xóa sau 24h, miễn phí 100%)
-    try {
-      fetch(`https://ntfy.sh/eng_sync_${pin}`, {
-        method: 'POST',
-        body: jsonStr
-      }).catch(e => console.warn('PIN publish:', e));
-    } catch (e) {}
-
-    // 2. Nén Base64 cho ai thích sao chép chuỗi mã
-    let syncCode = '';
-    if (typeof LZString !== 'undefined') {
-      syncCode = 'SYNC-' + LZString.compressToBase64(jsonStr);
-    } else {
-      syncCode = 'SYNC-' + btoa(unescape(encodeURIComponent(jsonStr)));
-    }
-
-    if (this.dom.syncCodeOutput) {
-      this.dom.syncCodeOutput.value = syncCode;
-    }
-
-    // 3. Tạo mã QR cho ai thích quét
-    if (this.dom.syncQrCode) {
-      this.dom.syncQrCode.innerHTML = '';
-      const urlEncoded = LZString.compressToEncodedURIComponent(jsonStr);
-      const syncUrl = `${window.location.origin}${window.location.pathname}#sync=${urlEncoded}`;
+      // Tải dữ liệu lên kênh PIN ntfy công khai (tự động xóa sau 24h, miễn phí 100%)
       try {
-        new QRCode(this.dom.syncQrCode, {
-          text: syncUrl,
-          width: 160,
-          height: 160,
-          colorDark: "#0f172a",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      } catch (err) {}
+        fetch(`https://ntfy.sh/eng_sync_${pin}`, {
+          method: 'POST',
+          body: jsonStr
+        }).catch(e => console.warn('PIN publish:', e));
+      } catch (e) {}
+
+      // 2. Nén Base64 cho ai thích sao chép chuỗi mã
+      let syncCode = '';
+      if (typeof LZString !== 'undefined') {
+        syncCode = 'SYNC-' + LZString.compressToBase64(jsonStr);
+      } else {
+        syncCode = 'SYNC-' + btoa(unescape(encodeURIComponent(jsonStr)));
+      }
+
+      if (this.dom.syncCodeOutput) {
+        this.dom.syncCodeOutput.value = syncCode;
+      }
+
+      // 3. Tạo mã QR cho ai thích quét
+      if (this.dom.syncQrCode) {
+        this.dom.syncQrCode.innerHTML = '';
+        const urlEncoded = LZString.compressToEncodedURIComponent(jsonStr);
+        const syncUrl = `${window.location.origin}${window.location.pathname}#sync=${urlEncoded}`;
+        try {
+          new QRCode(this.dom.syncQrCode, {
+            text: syncUrl,
+            width: 160,
+            height: 160,
+            colorDark: "#0f172a",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (err) {}
+      }
+
+      this.switchSyncTab('export');
+    } else {
+      // Khi chưa có bài nạp, mở ngay tab "Nhập mã (Nhận bài)" để người dùng nạp bài từ máy khác vào
+      if (this.dom.syncPinDisplay) {
+        this.dom.syncPinDisplay.textContent = 'Trống (0 bài)';
+      }
+      if (this.dom.syncCodeOutput) {
+        this.dom.syncCodeOutput.value = '';
+      }
+      if (this.dom.syncQrCode) {
+        this.dom.syncQrCode.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">Chưa có bài nào để tạo mã QR.</p>';
+      }
+      this.switchSyncTab('import');
     }
 
-    this.switchSyncTab('export');
     this.dom.syncModal.classList.add('active');
   }
 
