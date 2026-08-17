@@ -465,7 +465,7 @@ class TypingApp {
           throw new Error('Mã PIN không có dữ liệu');
         }
       } catch (err) {
-        Notify.error(`Không tìm thấy dữ liệu cho mã số "${cleanPin}".\nHãy đảm bảo máy gửi đã bấm "📲 Chuyển sang Điện thoại" và mã số chưa hết hạn nhé!`);
+        Notify.error(`Không tìm thấy dữ liệu cho mã số "${cleanPin}".\nHãy đảm bảo máy gửi đã bấm "🔄 Mã đồng bộ" và mã số chưa hết hạn nhé!`);
         return;
       }
     }
