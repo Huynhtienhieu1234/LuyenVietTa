@@ -112,6 +112,14 @@ class TypingApp {
       menuDropdownWrapper: document.getElementById('menu-dropdown-wrapper'),
       menuDropdownList: document.getElementById('menu-dropdown-list'),
 
+      // Mobile Cursor Toolbar
+      btnCursorStart: document.getElementById('btn-cursor-start'),
+      btnCursorPrevWord: document.getElementById('btn-cursor-prev-word'),
+      btnCursorLeft: document.getElementById('btn-cursor-left'),
+      btnCursorRight: document.getElementById('btn-cursor-right'),
+      btnCursorNextWord: document.getElementById('btn-cursor-next-word'),
+      btnCursorEnd: document.getElementById('btn-cursor-end'),
+
       // Speaking Workspace Elements
       speakingStageCard: document.getElementById('speaking-stage-card'),
       speakingRecorderPanel: document.getElementById('speaking-recorder-panel'),
@@ -1989,6 +1997,59 @@ class TypingApp {
     this.focusInput();
   }
 
+  jumpPreviousWord() {
+    if (!this.currentPassage || this.currentIndexInText <= 0) return;
+    const text = this.currentPassage.text;
+    let idx = this.currentIndexInText - 1;
+    while (idx > 0 && /\s/.test(text[idx])) idx--;
+    while (idx > 0 && !/\s/.test(text[idx - 1])) idx--;
+    this.jumpToCharIndex(Math.max(0, idx));
+  }
+
+  jumpNextWord() {
+    if (!this.currentPassage || this.currentIndexInText >= this.charElements.length) return;
+    const text = this.currentPassage.text;
+    let idx = this.currentIndexInText;
+    while (idx < text.length && !/\s/.test(text[idx])) idx++;
+    while (idx < text.length && /\s/.test(text[idx])) idx++;
+    this.jumpToCharIndex(Math.min(this.charElements.length, idx));
+  }
+
+  setupTouchCursor() {
+    if (!this.dom.typingContainer) return;
+    
+    let touchStartTime = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    this.dom.typingContainer.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartTime = Date.now();
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    this.dom.typingContainer.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length === 1) {
+        const touch = e.changedTouches[0];
+        const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
+        const duration = Date.now() - touchStartTime;
+
+        // If tap (not a scroll gesture)
+        if (dist < 15 && duration < 450) {
+          const el = document.elementFromPoint(touch.clientX, touch.clientY);
+          const charSpan = el ? el.closest('.char-item') : null;
+          if (charSpan && charSpan.dataset.index !== undefined) {
+            e.preventDefault();
+            const idx = parseInt(charSpan.dataset.index, 10);
+            this.jumpToCharIndex(idx);
+          }
+        }
+      }
+    });
+  }
+
   updateProgressBar() {
     if (!this.charElements.length) {
       this.dom.progressBarFill.style.width = '0%';
@@ -2857,6 +2918,33 @@ class TypingApp {
     if (this.dom.btnNext) {
       this.dom.btnNext.addEventListener('click', () => this.loadPassage(this.currentIndex + 1));
     }
+
+    // Mobile Cursor Toolbar Events
+    if (this.dom.btnCursorStart) {
+      this.dom.btnCursorStart.addEventListener('click', () => this.jumpToCharIndex(0));
+    }
+    if (this.dom.btnCursorPrevWord) {
+      this.dom.btnCursorPrevWord.addEventListener('click', () => this.jumpPreviousWord());
+    }
+    if (this.dom.btnCursorLeft) {
+      this.dom.btnCursorLeft.addEventListener('click', () => {
+        if (this.currentIndexInText > 0) this.jumpToCharIndex(this.currentIndexInText - 1);
+      });
+    }
+    if (this.dom.btnCursorRight) {
+      this.dom.btnCursorRight.addEventListener('click', () => {
+        if (this.currentIndexInText < this.charElements.length) this.jumpToCharIndex(this.currentIndexInText + 1);
+      });
+    }
+    if (this.dom.btnCursorNextWord) {
+      this.dom.btnCursorNextWord.addEventListener('click', () => this.jumpNextWord());
+    }
+    if (this.dom.btnCursorEnd) {
+      this.dom.btnCursorEnd.addEventListener('click', () => this.jumpToCharIndex(this.charElements.length));
+    }
+
+    // Setup touch gestures on typing container
+    this.setupTouchCursor();
 
     // Sound Toggle (Bật / Tắt Âm Thanh Gõ Nhẹ Nhàng)
     if (this.dom.btnToggleSound) {
