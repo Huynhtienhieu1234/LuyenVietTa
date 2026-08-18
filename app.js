@@ -53,6 +53,10 @@ class TypingApp {
     this.managePageSize = 5; // 5 | 10 | 20 | 'all'
     this.manageCurrentPage = 1;
 
+    // History Pagination State (Mặc định 5 lượt)
+    this.historyPageSize = 5; // 5 | 10 | 20 | 'all'
+    this.historyCurrentPage = 1;
+
     // DOM Elements
     this.dom = {
       // Mode Tabs
@@ -105,6 +109,7 @@ class TypingApp {
       themeName: document.getElementById('theme-name'),
       btnMenuTrigger: document.getElementById('btn-menu-trigger'),
       menuDropdownWrapper: document.getElementById('menu-dropdown-wrapper'),
+      menuDropdownList: document.getElementById('menu-dropdown-list'),
 
       // Speaking Workspace Elements
       speakingStageCard: document.getElementById('speaking-stage-card'),
@@ -171,9 +176,14 @@ class TypingApp {
       btnCustomCancel: document.getElementById('btn-custom-cancel'),
       btnCustomApply: document.getElementById('btn-custom-apply'),
 
-      // History & Streak
+      // History
       historyTbody: document.getElementById('history-tbody'),
       btnClearHistory: document.getElementById('btn-clear-history'),
+      historyLimitSelect: document.getElementById('history-limit-select'),
+      historyPaginationBar: document.getElementById('history-pagination-bar'),
+      historyPageIndicator: document.getElementById('history-page-indicator'),
+      btnHistoryPrev: document.getElementById('btn-history-prev'),
+      btnHistoryNext: document.getElementById('btn-history-next'),
       streakCount: document.getElementById('streak-count'),
 
       // 2-Way Device Sync
@@ -2248,7 +2258,7 @@ class TypingApp {
   saveHistory(item) {
     const history = JSON.parse(localStorage.getItem('eng_write_history') || '[]');
     history.unshift(item);
-    if (history.length > 20) history.pop();
+    if (history.length > 100) history.pop();
     localStorage.setItem('eng_write_history', JSON.stringify(history));
     this.renderHistory();
   }
@@ -2260,10 +2270,28 @@ class TypingApp {
         <tr>
           <td colspan="6" class="empty-history">Chưa có lượt luyện tập nào. Hãy bắt đầu gõ bài đầu tiên!</td>
         </tr>`;
+      if (this.dom.historyPaginationBar) {
+        this.dom.historyPaginationBar.style.display = 'none';
+      }
       return;
     }
 
-    this.dom.historyTbody.innerHTML = history.map(item => `
+    const total = history.length;
+    const isAll = this.historyPageSize === 'all' || this.historyPageSize >= total;
+    const pageSize = isAll ? total : parseInt(this.historyPageSize, 10);
+    const totalPages = isAll ? 1 : Math.ceil(total / pageSize);
+
+    if (this.historyCurrentPage > totalPages) {
+      this.historyCurrentPage = Math.max(1, totalPages);
+    }
+    if (this.historyCurrentPage < 1) {
+      this.historyCurrentPage = 1;
+    }
+
+    const startIndex = (this.historyCurrentPage - 1) * pageSize;
+    const displayList = history.slice(startIndex, startIndex + pageSize);
+
+    this.dom.historyTbody.innerHTML = displayList.map(item => `
       <tr>
         <td class="history-cell-time">${item.date || '--:--'}</td>
         <td class="history-cell-title"><strong>${item.title || 'Bài luyện tập'}</strong></td>
@@ -2273,6 +2301,24 @@ class TypingApp {
         <td class="history-cell-errors"><span class="error-val ${item.errors > 0 ? 'has-error' : 'no-error'}">${item.errors}</span></td>
       </tr>
     `).join('');
+
+    // Update Pagination UI
+    if (this.dom.historyPaginationBar) {
+      if (totalPages > 1) {
+        this.dom.historyPaginationBar.style.display = 'flex';
+        if (this.dom.historyPageIndicator) {
+          this.dom.historyPageIndicator.innerHTML = `Trang <strong>${this.historyCurrentPage}</strong> / ${totalPages} (${total} lượt)`;
+        }
+        if (this.dom.btnHistoryPrev) {
+          this.dom.btnHistoryPrev.disabled = this.historyCurrentPage <= 1;
+        }
+        if (this.dom.btnHistoryNext) {
+          this.dom.btnHistoryNext.disabled = this.historyCurrentPage >= totalPages;
+        }
+      } else {
+        this.dom.historyPaginationBar.style.display = 'none';
+      }
+    }
   }
 
   updateDailyStreak() {
@@ -2469,7 +2515,22 @@ class TypingApp {
     if (this.dom.btnMenuTrigger && this.dom.menuDropdownWrapper) {
       this.dom.btnMenuTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.dom.menuDropdownWrapper.classList.toggle('is-open');
+        const isOpen = this.dom.menuDropdownWrapper.classList.toggle('is-open');
+        if (isOpen && this.dom.menuDropdownList) {
+          // Dynamic boundary detection to prevent any clipping on mobile
+          this.dom.menuDropdownList.style.left = '0px';
+          this.dom.menuDropdownList.style.right = 'auto';
+          requestAnimationFrame(() => {
+            const rect = this.dom.menuDropdownList.getBoundingClientRect();
+            if (rect.right > window.innerWidth - 10) {
+              const overflow = rect.right - (window.innerWidth - 10);
+              this.dom.menuDropdownList.style.left = `-${overflow}px`;
+            }
+            if (rect.left < 8) {
+              this.dom.menuDropdownList.style.left = '0px';
+            }
+          });
+        }
       });
 
       document.addEventListener('click', (e) => {
@@ -2937,8 +2998,39 @@ class TypingApp {
         );
         if (ok) {
           localStorage.removeItem('eng_write_history');
+          this.historyCurrentPage = 1;
           this.renderHistory();
           Notify.success('Đã xóa sạch lịch sử luyện tập!');
+        }
+      });
+    }
+
+    // History Limit & Pagination Controls
+    if (this.dom.historyLimitSelect) {
+      this.dom.historyLimitSelect.addEventListener('change', (e) => {
+        this.historyPageSize = e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10);
+        this.historyCurrentPage = 1;
+        this.renderHistory();
+      });
+    }
+
+    if (this.dom.btnHistoryPrev) {
+      this.dom.btnHistoryPrev.addEventListener('click', () => {
+        if (this.historyCurrentPage > 1) {
+          this.historyCurrentPage--;
+          this.renderHistory();
+        }
+      });
+    }
+
+    if (this.dom.btnHistoryNext) {
+      this.dom.btnHistoryNext.addEventListener('click', () => {
+        const history = JSON.parse(localStorage.getItem('eng_write_history') || '[]');
+        const pageSize = this.historyPageSize === 'all' ? history.length : parseInt(this.historyPageSize, 10);
+        const totalPages = Math.ceil(history.length / pageSize);
+        if (this.historyCurrentPage < totalPages) {
+          this.historyCurrentPage++;
+          this.renderHistory();
         }
       });
     }
