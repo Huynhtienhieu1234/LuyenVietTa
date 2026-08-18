@@ -57,6 +57,9 @@ class TypingApp {
     this.historyPageSize = 5; // 5 | 10 | 20 | 'all'
     this.historyCurrentPage = 1;
 
+    // Furthest typed character boundary
+    this.maxTypedIndex = 0;
+
     // DOM Elements
     this.dom = {
       // Mode Tabs
@@ -1970,13 +1973,16 @@ class TypingApp {
     }
 
     this.currentIndexInText = 0;
+    this.maxTypedIndex = 0;
     this.applyHintState();
     this.updateCaretPosition();
   }
 
   jumpToCharIndex(targetIndex) {
     if (!this.charElements || !this.charElements.length) return;
-    targetIndex = Math.max(0, Math.min(targetIndex, this.charElements.length));
+    // Only allow navigating within already typed characters
+    const maxAllowed = Math.max(0, Math.min(this.maxTypedIndex, this.charElements.length));
+    targetIndex = Math.max(0, Math.min(targetIndex, maxAllowed));
 
     this.currentIndexInText = targetIndex;
     this.updateCaretPosition();
@@ -2011,20 +2017,24 @@ class TypingApp {
 
   getCharIndexFromCoords(clientX, clientY) {
     if (!this.charElements || !this.charElements.length) return 0;
+    const maxAllowed = Math.max(0, Math.min(this.maxTypedIndex, this.charElements.length));
 
     // 1. Direct hit on a char span
     const el = document.elementFromPoint(clientX, clientY);
     if (el) {
       const charSpan = el.closest('.char-item');
       if (charSpan && charSpan.dataset.index !== undefined) {
-        return parseInt(charSpan.dataset.index, 10);
+        const idx = parseInt(charSpan.dataset.index, 10);
+        return Math.min(idx, maxAllowed);
       }
     }
 
-    // 2. Find nearest char in the matching line
+    // 2. Find nearest char in the matching line among typed chars
     let closestIdx = 0;
     let minDist = Infinity;
-    for (let i = 0; i < this.charElements.length; i++) {
+    const limit = Math.min(this.charElements.length, maxAllowed + 1);
+
+    for (let i = 0; i < limit; i++) {
       const rect = this.charElements[i].getBoundingClientRect();
       if (clientY >= rect.top - 20 && clientY <= rect.bottom + 20) {
         const cx = rect.left + rect.width / 2;
@@ -2035,10 +2045,10 @@ class TypingApp {
         }
       }
     }
-    if (minDist !== Infinity) return closestIdx;
+    if (minDist !== Infinity) return Math.min(closestIdx, maxAllowed);
 
-    // 3. Fallback: 2D Euclidean distance
-    for (let i = 0; i < this.charElements.length; i++) {
+    // 3. Fallback: 2D Euclidean distance among typed chars
+    for (let i = 0; i < limit; i++) {
       const rect = this.charElements[i].getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
@@ -2048,7 +2058,7 @@ class TypingApp {
         closestIdx = i;
       }
     }
-    return closestIdx;
+    return Math.min(closestIdx, maxAllowed);
   }
 
   setupTouchCursor() {
@@ -2265,6 +2275,26 @@ class TypingApp {
       this.startTimer();
     }
 
+    // Auto-advance newline if current target is newline and user typed something else or space
+    if (this.currentPassage.text[this.currentIndexInText] === '\n') {
+      const nlSpan = this.charElements[this.currentIndexInText];
+      if (nlSpan) {
+        nlSpan.classList.remove('char-error');
+        nlSpan.classList.add('char-correct');
+      }
+      this.currentIndexInText++;
+      this.maxTypedIndex = Math.max(this.maxTypedIndex, this.currentIndexInText);
+      if (inputChar === '\n' || inputChar === ' ') {
+        this.updateCaretPosition();
+        this.updateProgressBar();
+        return;
+      }
+      if (this.currentIndexInText >= this.charElements.length) {
+        this.completeSession();
+        return;
+      }
+    }
+
     const rawTargetChar = this.currentPassage.text[this.currentIndexInText];
     const span = this.charElements[this.currentIndexInText];
     
@@ -2291,6 +2321,21 @@ class TypingApp {
     }
 
     this.currentIndexInText++;
+    this.maxTypedIndex = Math.max(this.maxTypedIndex, this.currentIndexInText);
+
+    // Auto-advance newline immediately if the next character is '\n' and current typed was space
+    if (this.currentIndexInText < this.charElements.length && this.currentPassage.text[this.currentIndexInText] === '\n') {
+      if (inputChar === ' ' || inputChar === '\n') {
+        const nextNlSpan = this.charElements[this.currentIndexInText];
+        if (nextNlSpan) {
+          nextNlSpan.classList.remove('char-error');
+          nextNlSpan.classList.add('char-correct');
+        }
+        this.currentIndexInText++;
+        this.maxTypedIndex = Math.max(this.maxTypedIndex, this.currentIndexInText);
+      }
+    }
+
     this.updateCaretPosition();
     this.updateProgressBar();
     this.updateLiveStats();
@@ -2420,6 +2465,7 @@ class TypingApp {
     this.totalTypedCount = 0;
     this.errorCount = 0;
     this.typedHistory = [];
+    this.maxTypedIndex = 0;
     this.mistakeWords.clear();
 
     this.dom.statWpm.textContent = '0';
