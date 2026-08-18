@@ -94,6 +94,7 @@ class TypingApp {
       selectSavedTexts: document.getElementById('select-saved-texts'),
       btnOpenManageModal: document.getElementById('btn-open-manage-modal'),
       myTextsCount: document.getElementById('my-texts-count'),
+      btnToggleAutoSpeak: document.getElementById('btn-toggle-auto-speak'),
       btnToggleHint: document.getElementById('btn-toggle-hint'),
       btnSpeakAll: document.getElementById('btn-speak-all'),
       fontSizeSelect: document.getElementById('font-size-select'),
@@ -1880,6 +1881,29 @@ class TypingApp {
   }
 
   // =================================================================
+  // Bật / Tắt âm thanh tự động đọc từ khi gõ
+  // =================================================================
+  toggleAutoSpeak() {
+    this.autoSpeakWord = !this.autoSpeakWord;
+    this.applyAutoSpeakState();
+    localStorage.setItem('eng_write_auto_speak', this.autoSpeakWord.toString());
+    Notify.toast(this.autoSpeakWord ? '🗣️ Đã BẬT phát âm từ khi gõ' : '🤫 Đã TẮT phát âm từ khi gõ', 'info');
+  }
+
+  applyAutoSpeakState() {
+    if (!this.dom.btnToggleAutoSpeak) return;
+    if (this.autoSpeakWord) {
+      this.dom.btnToggleAutoSpeak.innerHTML = '🗣️ Đọc từ: Bật';
+      this.dom.btnToggleAutoSpeak.classList.remove('is-disabled');
+      this.dom.btnToggleAutoSpeak.title = 'Đang BẬT tự động phát âm từng từ khi gõ (Nhấn để tắt)';
+    } else {
+      this.dom.btnToggleAutoSpeak.innerHTML = '🤫 Đọc từ: Tắt';
+      this.dom.btnToggleAutoSpeak.classList.add('is-disabled');
+      this.dom.btnToggleAutoSpeak.title = 'Đang TẮT phát âm từ khi gõ (Nhấn để bật)';
+    }
+  }
+
+  // =================================================================
   // Bật / Tắt chữ gợi ý (Hint / Ghost text toggle)
   // =================================================================
   toggleHint() {
@@ -1932,15 +1956,11 @@ class TypingApp {
         span.textContent = char;
       }
 
-      // Click on any character/word to hear pronunciation
+      // Click/Tap on any character to immediately jump the cursor there and pronounce the word
       span.addEventListener('click', (e) => {
         e.stopPropagation();
         const idx = parseInt(span.dataset.index, 10);
-        const clickedWord = this.getWordAtCharIndex(idx);
-        if (clickedWord) {
-          this.speakWord(clickedWord);
-        }
-        this.focusInput();
+        this.jumpToCharIndex(idx);
       });
 
       this.dom.typingDisplay.appendChild(span);
@@ -1950,6 +1970,33 @@ class TypingApp {
     this.currentIndexInText = 0;
     this.applyHintState();
     this.updateCaretPosition();
+  }
+
+  jumpToCharIndex(targetIndex) {
+    if (!this.charElements || !this.charElements.length) return;
+    targetIndex = Math.max(0, Math.min(targetIndex, this.charElements.length));
+
+    // If moving backward: clean status from targetIndex up to previous currentIndexInText
+    if (targetIndex < this.currentIndexInText) {
+      for (let i = targetIndex; i < this.currentIndexInText; i++) {
+        if (this.charElements[i]) {
+          this.charElements[i].classList.remove('char-correct', 'char-error');
+        }
+        delete this.typedHistory[i];
+      }
+    }
+
+    this.currentIndexInText = targetIndex;
+    this.updateCaretPosition();
+    this.updateProgressBar();
+    this.updateLiveStats();
+
+    // Pronounce the word at targetIndex
+    const clickedWord = this.getWordAtCharIndex(targetIndex < this.charElements.length ? targetIndex : targetIndex - 1);
+    if (clickedWord) {
+      this.speakWord(clickedWord);
+    }
+    this.focusInput();
   }
 
   updateProgressBar() {
@@ -1982,6 +2029,32 @@ class TypingApp {
     if (e.key === 'Backspace') {
       e.preventDefault();
       this.handleBackspace();
+      return;
+    }
+
+    // Navigation Arrow Keys (Di chuyển con trỏ bằng phím mũi tên)
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      if (this.currentIndexInText > 0) {
+        this.jumpToCharIndex(this.currentIndexInText - 1);
+      }
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (this.currentIndexInText < this.charElements.length) {
+        this.jumpToCharIndex(this.currentIndexInText + 1);
+      }
+      return;
+    }
+    if (e.key === 'Home') {
+      e.preventDefault();
+      this.jumpToCharIndex(0);
+      return;
+    }
+    if (e.key === 'End') {
+      e.preventDefault();
+      this.jumpToCharIndex(this.charElements.length);
       return;
     }
 
@@ -2349,6 +2422,12 @@ class TypingApp {
       this.soundEnabled = sound === 'true';
     }
     this.applySoundState();
+
+    const autoSpeak = localStorage.getItem('eng_write_auto_speak');
+    if (autoSpeak !== null) {
+      this.autoSpeakWord = autoSpeak === 'true';
+    }
+    this.applyAutoSpeakState();
 
     const hint = localStorage.getItem('eng_write_hint');
     if (hint !== null) {
@@ -2723,6 +2802,13 @@ class TypingApp {
 
     if (this.dom.btnRecordMic) {
       this.dom.btnRecordMic.addEventListener('click', () => this.toggleRecording());
+    }
+
+    // Toggle Auto Speak Word
+    if (this.dom.btnToggleAutoSpeak) {
+      this.dom.btnToggleAutoSpeak.addEventListener('click', () => {
+        this.toggleAutoSpeak();
+      });
     }
 
     // Toggle Hint Ghost Text
