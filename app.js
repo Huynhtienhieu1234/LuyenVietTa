@@ -35,16 +35,11 @@ class TypingApp {
     this.autoSpeakWord = true; // Tự động phát âm từ gợi ý khi gõ
     this.isSpeaking = false;
     this.hintEnabled = true; // Bật / Tắt chữ gợi ý
-    this.selectedVoiceGender = 'female'; // 'female' | 'male'
+    this.selectedVoiceGender = 'google'; // 'google' | 'female' | 'male' | 'uk'
     this.availableVoices = [];
-    this.fontSize = 1.35; // rem
+    this.fontSize = 22; // px
     this.themeList = ['light', 'dark', 'cyberpunk', 'forest'];
     this.currentThemeIndex = 0;
-
-    // Mobile Virtual Keyboard State
-    this.isVirtualKeyboardVisible = false;
-    this.vkMode = 'letters'; // 'letters' | 'symbols'
-    this.vkShift = false;
 
     // Speaking State & Recorder
     this.currentMode = 'writing'; // 'writing' | 'speaking'
@@ -92,17 +87,11 @@ class TypingApp {
       selectSavedTexts: document.getElementById('select-saved-texts'),
       btnOpenManageModal: document.getElementById('btn-open-manage-modal'),
       myTextsCount: document.getElementById('my-texts-count'),
-      btnToggleVirtualKb: document.getElementById('btn-toggle-virtual-kb'),
-      virtualKeyboardContainer: document.getElementById('virtual-keyboard-container'),
-      virtualKeyboardBoard: document.getElementById('virtual-keyboard-board'),
-      vkNextKeyIndicator: document.getElementById('vk-next-key-indicator'),
-      vkTargetKeyChar: document.getElementById('vk-target-key-char'),
-      btnVkSpeakCur: document.getElementById('btn-vk-speak-cur'),
-      btnVkHide: document.getElementById('btn-vk-hide'),
       btnToggleHint: document.getElementById('btn-toggle-hint'),
       btnSpeakAll: document.getElementById('btn-speak-all'),
-      btnFontSizeInc: document.getElementById('btn-font-size-inc'),
-      btnFontSizeDec: document.getElementById('btn-font-size-dec'),
+      fontSizeSelect: document.getElementById('font-size-select'),
+      voiceGenderSelect: document.getElementById('voice-gender-select'),
+      writeRateSelect: document.getElementById('write-rate-select'),
       btnRandomText: document.getElementById('btn-random-text'),
       btnRestart: document.getElementById('btn-restart'),
       btnNext: document.getElementById('btn-next'),
@@ -111,6 +100,8 @@ class TypingApp {
       soundText: document.getElementById('sound-text'),
       btnThemeToggle: document.getElementById('btn-theme-toggle'),
       themeName: document.getElementById('theme-name'),
+      btnMenuTrigger: document.getElementById('btn-menu-trigger'),
+      menuDropdownWrapper: document.getElementById('menu-dropdown-wrapper'),
 
       // Speaking Workspace Elements
       speakingStageCard: document.getElementById('speaking-stage-card'),
@@ -149,6 +140,9 @@ class TypingApp {
       manageTextsModal: document.getElementById('manage-texts-modal'),
       savedTextsListContainer: document.getElementById('saved-texts-list-container'),
       btnModalAddNew: document.getElementById('btn-modal-add-new'),
+      btnToggleManageTips: document.getElementById('btn-toggle-manage-tips'),
+      manageInfoBox: document.getElementById('manage-info-box'),
+      btnCloseManageTips: document.getElementById('btn-close-manage-tips'),
       btnDeleteAllCustom: document.getElementById('btn-delete-all-custom'),
       btnManageClose: document.getElementById('btn-manage-close'),
 
@@ -179,16 +173,14 @@ class TypingApp {
       btnClearHistory: document.getElementById('btn-clear-history'),
       streakCount: document.getElementById('streak-count'),
 
-      // 2-Way Device Sync & Backup
+      // 2-Way Device Sync
       btnOpenSyncModal: document.getElementById('btn-open-sync-modal'),
       syncModal: document.getElementById('sync-modal'),
       btnSyncModalClose: document.getElementById('btn-sync-modal-close'),
       tabBtnExportCode: document.getElementById('tab-btn-export-code'),
       tabBtnImportCode: document.getElementById('tab-btn-import-code'),
-      tabBtnFile: document.getElementById('tab-btn-file'),
       syncPaneExportCode: document.getElementById('sync-pane-export-code'),
       syncPaneImportCode: document.getElementById('sync-pane-import-code'),
-      syncPaneFile: document.getElementById('sync-pane-file'),
       syncPinDisplay: document.getElementById('sync-pin-display'),
       btnCopySyncPin: document.getElementById('btn-copy-sync-pin'),
       syncCodeOutput: document.getElementById('sync-code-output'),
@@ -196,10 +188,23 @@ class TypingApp {
       syncCodeInput: document.getElementById('sync-code-input'),
       btnApplySyncCode: document.getElementById('btn-apply-sync-code'),
       syncQrCode: document.getElementById('sync-qr-code'),
-      btnExportBackup: document.getElementById('btn-export-backup'),
-      btnTriggerImport: document.getElementById('btn-trigger-import'),
-      backupFileInput: document.getElementById('backup-file-input'),
-      toastContainer: document.getElementById('toast-container')
+      toastContainer: document.getElementById('toast-container'),
+
+      // User Guide Modal
+      btnOpenGuideModal: document.getElementById('btn-open-guide-modal'),
+      guideModal: document.getElementById('guide-modal'),
+      btnGuideClose: document.getElementById('btn-guide-close'),
+      btnGuideCloseTop: document.getElementById('btn-guide-close-top'),
+      tabBtnGuideWriting: document.getElementById('tab-btn-guide-writing'),
+      tabBtnGuideSpeaking: document.getElementById('tab-btn-guide-speaking'),
+      tabBtnGuideManage: document.getElementById('tab-btn-guide-manage'),
+      tabBtnGuideSync: document.getElementById('tab-btn-guide-sync'),
+      tabBtnGuideShortcuts: document.getElementById('tab-btn-guide-shortcuts'),
+      guidePaneWriting: document.getElementById('guide-pane-writing'),
+      guidePaneSpeaking: document.getElementById('guide-pane-speaking'),
+      guidePaneManage: document.getElementById('guide-pane-manage'),
+      guidePaneSync: document.getElementById('guide-pane-sync'),
+      guidePaneShortcuts: document.getElementById('guide-pane-shortcuts')
     };
 
     this.init();
@@ -457,29 +462,18 @@ class TypingApp {
 
   switchSyncTab(tab) {
     if (tab === 'export') {
-      this.dom.tabBtnExportCode.classList.add('active');
-      this.dom.tabBtnImportCode.classList.remove('active');
-      this.dom.tabBtnFile.classList.remove('active');
-      this.dom.syncPaneExportCode.style.display = 'block';
-      this.dom.syncPaneImportCode.style.display = 'none';
-      this.dom.syncPaneFile.style.display = 'none';
-    } else if (tab === 'import') {
-      this.dom.tabBtnImportCode.classList.add('active');
-      this.dom.tabBtnExportCode.classList.remove('active');
-      this.dom.tabBtnFile.classList.remove('active');
-      this.dom.syncPaneImportCode.style.display = 'block';
-      this.dom.syncPaneExportCode.style.display = 'none';
-      this.dom.syncPaneFile.style.display = 'none';
+      if (this.dom.tabBtnExportCode) this.dom.tabBtnExportCode.classList.add('active');
+      if (this.dom.tabBtnImportCode) this.dom.tabBtnImportCode.classList.remove('active');
+      if (this.dom.syncPaneExportCode) this.dom.syncPaneExportCode.style.display = 'block';
+      if (this.dom.syncPaneImportCode) this.dom.syncPaneImportCode.style.display = 'none';
+    } else {
+      if (this.dom.tabBtnImportCode) this.dom.tabBtnImportCode.classList.add('active');
+      if (this.dom.tabBtnExportCode) this.dom.tabBtnExportCode.classList.remove('active');
+      if (this.dom.syncPaneImportCode) this.dom.syncPaneImportCode.style.display = 'block';
+      if (this.dom.syncPaneExportCode) this.dom.syncPaneExportCode.style.display = 'none';
       setTimeout(() => {
         if (this.dom.syncCodeInput) this.dom.syncCodeInput.focus();
       }, 100);
-    } else {
-      this.dom.tabBtnFile.classList.add('active');
-      this.dom.tabBtnExportCode.classList.remove('active');
-      this.dom.tabBtnImportCode.classList.remove('active');
-      this.dom.syncPaneFile.style.display = 'block';
-      this.dom.syncPaneExportCode.style.display = 'none';
-      this.dom.syncPaneImportCode.style.display = 'none';
     }
   }
 
@@ -536,78 +530,6 @@ class TypingApp {
       this.dom.syncCodeInput.value = '';
       if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
     }
-  }
-
-  exportBackupData() {
-    const backupObj = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      streak: localStorage.getItem('eng_write_streak') || '1',
-      writingTexts: this.savedCustomTexts,
-      speakingTexts: this.savedSpeakingTexts
-    };
-
-    const jsonStr = JSON.stringify(backupObj, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const filename = `English_Lessons_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-
-    this.triggerBlobDownload(blob, filename);
-    Notify.success('💾 Đã xuất file sao lưu bài học thành công!');
-  }
-
-  importBackupData(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        let count = 0;
-
-        if (Array.isArray(data.writingTexts)) {
-          const currentWriting = this.savedCustomTexts;
-          data.writingTexts.forEach(t => {
-            if (!currentWriting.some(item => item.id === t.id || item.text === t.text)) {
-              currentWriting.unshift(t);
-              count++;
-            }
-          });
-          this.savedCustomTexts = currentWriting;
-          localStorage.setItem('eng_write_custom_texts', JSON.stringify(this.savedCustomTexts));
-        }
-
-        if (Array.isArray(data.speakingTexts)) {
-          const currentSpeaking = this.savedSpeakingTexts;
-          data.speakingTexts.forEach(t => {
-            if (!currentSpeaking.some(item => item.id === t.id || item.text === t.text)) {
-              currentSpeaking.unshift(t);
-              count++;
-            }
-          });
-          this.savedSpeakingTexts = currentSpeaking;
-          localStorage.setItem('eng_speak_custom_texts', JSON.stringify(this.savedSpeakingTexts));
-        }
-
-        if (data.streak) {
-          const currentStreak = parseInt(localStorage.getItem('eng_write_streak') || '0', 10);
-          if (parseInt(data.streak) > currentStreak) {
-            localStorage.setItem('eng_write_streak', data.streak.toString());
-            this.dom.streakCount.textContent = data.streak;
-          }
-        }
-
-        this.updateCustomTextsCount();
-        this.populateSavedTextsDropdown();
-        this.renderManageTextsList();
-        this.loadFilterTexts();
-        this.loadPassage(0);
-
-        if (this.dom.syncModal) this.dom.syncModal.classList.remove('active');
-        Notify.success(`✅ Đã khôi phục thành công ${count} bài nạp vào máy!`);
-      } catch (err) {
-        Notify.error('File sao lưu không hợp lệ hoặc bị lỗi: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
   }
 
   showToast(message, type = 'success') {
@@ -875,31 +797,199 @@ class TypingApp {
   }
 
   getVoice(gender) {
-    if (!this.availableVoices.length && 'speechSynthesis' in window) {
-      this.availableVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+    if (!this.availableVoices || !this.availableVoices.length) {
+      if ('speechSynthesis' in window) {
+        const list = window.speechSynthesis.getVoices();
+        this.availableVoices = list.filter(v => v.lang && (v.lang.startsWith('en') || v.lang.includes('en')));
+        if (!this.availableVoices.length) this.availableVoices = list;
+      }
     }
 
+    const googleKeywords = ['google us english', 'google', 'natural', 'jenny', 'aria', 'guy'];
+    const ukKeywords = ['uk', 'gb', 'british', 'oliver', 'george', 'serena', 'stephanie', 'hazel'];
     const femaleKeywords = ['female', 'zira', 'samantha', 'victoria', 'karen', 'fiona', 'catherine', 'susan', 'jenny', 'aria'];
     const maleKeywords = ['male', 'david', 'mark', 'george', 'daniel', 'oliver', 'guy', 'ryan', 'alex'];
 
-    if (gender === 'male') {
+    if (gender === 'google') {
       const match = this.availableVoices.find(v => {
-        const name = v.name.toLowerCase();
+        const name = (v.name || '').toLowerCase();
+        return googleKeywords.some(k => name.includes(k));
+      });
+      if (match) return { voice: match, pitch: 1.0 };
+      return { voice: this.availableVoices[0] || null, pitch: 1.0 };
+    } else if (gender === 'uk') {
+      const match = this.availableVoices.find(v => {
+        const name = (v.name || '').toLowerCase();
+        const lang = (v.lang || '').toLowerCase();
+        return lang.includes('gb') || lang.includes('uk') || ukKeywords.some(k => name.includes(k));
+      });
+      if (match) return { voice: match, pitch: 1.0 };
+      return { voice: this.availableVoices[0] || null, pitch: 1.0 };
+    } else if (gender === 'male') {
+      const match = this.availableVoices.find(v => {
+        const name = (v.name || '').toLowerCase();
         return maleKeywords.some(k => name.includes(k)) && !femaleKeywords.some(k => name.includes(k));
       });
       if (match) return { voice: match, pitch: 0.95 };
-      // Fallback: use first english voice with lower pitch
       return { voice: this.availableVoices[0] || null, pitch: 0.85 };
     } else {
       // Female default
       const match = this.availableVoices.find(v => {
-        const name = v.name.toLowerCase();
+        const name = (v.name || '').toLowerCase();
         return femaleKeywords.some(k => name.includes(k));
       });
       if (match) return { voice: match, pitch: 1.05 };
-      // Fallback: use first english voice with slightly higher pitch
       return { voice: this.availableVoices[0] || null, pitch: 1.15 };
     }
+  }
+
+  playGoogleTTS(text, rate = 1.0, onEnd, onError) {
+    const rawChunks = text.match(/[^.!?\n]+[.!?\n]+/g) || [text];
+    const chunks = [];
+    rawChunks.forEach(chunk => {
+      chunk = chunk.trim();
+      if (!chunk) return;
+      if (chunk.length > 150) {
+        const words = chunk.split(/\s+/);
+        let curr = '';
+        words.forEach(w => {
+          if ((curr + ' ' + w).length <= 150) {
+            curr = curr ? curr + ' ' + w : w;
+          } else {
+            if (curr) chunks.push(curr);
+            curr = w;
+          }
+        });
+        if (curr) chunks.push(curr);
+      } else {
+        chunks.push(chunk);
+      }
+    });
+
+    if (chunks.length === 0) {
+      if (onEnd) onEnd();
+      return;
+    }
+
+    let chunkIdx = 0;
+    this.isSpeaking = true;
+
+    const playNext = () => {
+      if (!this.isSpeaking) return;
+      if (chunkIdx >= chunks.length) {
+        this.isSpeaking = false;
+        this.activeAudio = null;
+        if (onEnd) onEnd();
+        return;
+      }
+
+      const chunkText = chunks[chunkIdx++];
+      const encoded = encodeURIComponent(chunkText);
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=en&client=tw-ob`;
+
+      const audio = new Audio(url);
+      try {
+        audio.playbackRate = rate;
+      } catch (e) {}
+      this.activeAudio = audio;
+
+      audio.onended = () => {
+        playNext();
+      };
+
+      audio.onerror = (err) => {
+        console.warn('Google TTS stream error, fallback to WebSpeech voice', err);
+        this.activeAudio = null;
+        if (onError) {
+          onError();
+        } else if (onEnd) {
+          onEnd();
+        }
+      };
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Google TTS play rejected, fallback to WebSpeech:', err);
+          if (onError) {
+            onError();
+          } else if (onEnd) {
+            onEnd();
+          }
+        });
+      }
+    };
+
+    playNext();
+  }
+
+  speakWebSpeech(text, rate = 1.0, gender = 'google', onEnd, onError) {
+    if (!('speechSynthesis' in window)) {
+      if (onError) onError();
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+
+    if (!this.availableVoices || !this.availableVoices.length) {
+      const list = window.speechSynthesis.getVoices();
+      if (list && list.length) {
+        this.availableVoices = list.filter(v => v.lang && (v.lang.startsWith('en') || v.lang.includes('en')));
+        if (!this.availableVoices.length) this.availableVoices = list;
+      }
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = gender === 'uk' ? 'en-GB' : 'en-US';
+    utterance.rate = rate;
+
+    const { voice, pitch } = this.getVoice(gender);
+    if (voice) utterance.voice = voice;
+    utterance.pitch = pitch;
+
+    this.activeUtterance = utterance;
+    this.isSpeaking = true;
+
+    if (this.speechHeartbeat) clearInterval(this.speechHeartbeat);
+    this.speechHeartbeat = setInterval(() => {
+      if (!this.isSpeaking) {
+        clearInterval(this.speechHeartbeat);
+        return;
+      }
+      if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    }, 2000);
+
+    utterance.onend = () => {
+      if (this.speechHeartbeat) clearInterval(this.speechHeartbeat);
+      this.activeUtterance = null;
+      this.isSpeaking = false;
+      if (onEnd) onEnd();
+    };
+
+    utterance.onerror = (err) => {
+      console.warn('SpeechSynthesis error:', err);
+      if (this.speechHeartbeat) clearInterval(this.speechHeartbeat);
+      this.activeUtterance = null;
+      this.isSpeaking = false;
+      if (onError) onError();
+      else if (onEnd) onEnd();
+    };
+
+    setTimeout(() => {
+      try {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.error('speak error:', err);
+        this.stopSpeech();
+        if (onError) onError();
+      }
+    }, 50);
   }
 
   toggleSpeakPassage() {
@@ -907,43 +997,45 @@ class TypingApp {
       this.stopSpeech();
       return;
     }
-    if (this.currentPassage) {
-      this.speakText(this.currentPassage.text);
+    if (this.currentPassage && this.currentPassage.text) {
+      const rate = this.dom.writeRateSelect ? parseFloat(this.dom.writeRateSelect.value || '1.0') : 1.0;
+      this.speakText(this.currentPassage.text, rate);
     }
   }
 
-  speakText(text, rate = 0.95) {
-    if (!('speechSynthesis' in window)) {
-      alert('Trình duyệt của bạn không hỗ trợ tính năng phát âm Text-to-Speech.');
-      return;
+  speakText(text, rate = 1.0) {
+    const cleanText = (text || '').replace(/\+/g, ' ').trim();
+    if (!cleanText) return;
+
+    if (this.isSpeaking) {
+      this.stopSpeech();
     }
-    window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = rate;
+    if (this.dom.btnSpeakAll) {
+      this.dom.btnSpeakAll.classList.add('active');
+      this.dom.btnSpeakAll.textContent = '⏹️ Dừng';
+    }
 
-    const { voice, pitch } = this.getVoice(this.selectedVoiceGender);
-    if (voice) utterance.voice = voice;
-    utterance.pitch = pitch;
-
-    this.isSpeaking = true;
-    this.dom.btnSpeakAll.classList.add('active');
-    this.dom.btnSpeakAll.textContent = '⏹️ Dừng';
-
-    utterance.onend = () => {
+    const finishCallback = () => {
       this.isSpeaking = false;
-      this.dom.btnSpeakAll.classList.remove('active');
-      this.dom.btnSpeakAll.textContent = '🔊 Phát âm';
+      if (this.dom.btnSpeakAll) {
+        this.dom.btnSpeakAll.classList.remove('active');
+        this.dom.btnSpeakAll.textContent = '🔊 Phát âm cả bài';
+      }
     };
 
-    utterance.onerror = () => {
-      this.isSpeaking = false;
-      this.dom.btnSpeakAll.classList.remove('active');
-      this.dom.btnSpeakAll.textContent = '🔊 Phát âm';
-    };
-
-    window.speechSynthesis.speak(utterance);
+    if (this.selectedVoiceGender === 'google') {
+      this.playGoogleTTS(
+        cleanText,
+        rate,
+        finishCallback,
+        () => {
+          this.speakWebSpeech(cleanText, rate, 'google', finishCallback, finishCallback);
+        }
+      );
+    } else {
+      this.speakWebSpeech(cleanText, rate, this.selectedVoiceGender, finishCallback, finishCallback);
+    }
   }
 
   speakWord(word) {
@@ -951,14 +1043,30 @@ class TypingApp {
     const clean = word.toLowerCase().replace(/[^a-z0-9']/g, '').trim();
     if (!clean || clean.length === 0) return;
 
-    if ('speechSynthesis' in window) {
-      // Don't interrupt full passage playback if user explicitly clicked Speak All
-      if (this.isSpeaking) return;
+    if (this.isSpeaking) return; // Don't interrupt full passage playback
 
+    const rate = this.dom.writeRateSelect ? parseFloat(this.dom.writeRateSelect.value || '1.0') : 1.0;
+
+    if (this.selectedVoiceGender === 'google') {
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(clean)}&tl=en&client=tw-ob`;
+      const audio = new Audio(url);
+      try {
+        audio.playbackRate = rate;
+      } catch (e) {}
+      audio.play().catch(() => {
+        this.speakWebSpeechWord(clean, rate);
+      });
+    } else {
+      this.speakWebSpeechWord(clean, rate);
+    }
+  }
+
+  speakWebSpeechWord(clean, rate = 1.0) {
+    if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.95;
+      utterance.lang = this.selectedVoiceGender === 'uk' ? 'en-GB' : 'en-US';
+      utterance.rate = rate;
 
       const { voice, pitch } = this.getVoice(this.selectedVoiceGender);
       if (voice) utterance.voice = voice;
@@ -1001,12 +1109,16 @@ class TypingApp {
   }
 
   stopSpeech() {
+    if (this.speechHeartbeat) clearInterval(this.speechHeartbeat);
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    this.activeUtterance = null;
     this.isSpeaking = false;
-    this.dom.btnSpeakAll.classList.remove('active');
-    this.dom.btnSpeakAll.textContent = '🔊 Phát âm';
+    if (this.dom.btnSpeakAll) {
+      this.dom.btnSpeakAll.classList.remove('active');
+      this.dom.btnSpeakAll.textContent = '🔊 Phát âm';
+    }
     if (this.dom.btnSpeakListenSample) {
       this.dom.btnSpeakListenSample.classList.remove('active');
       this.dom.btnSpeakListenSample.textContent = '🔊 Nghe mẫu';
@@ -1070,9 +1182,6 @@ class TypingApp {
       } else {
         this.loadPassage(0);
       }
-      if (this.isVirtualKeyboardVisible) {
-        this.renderVirtualKeyboard();
-      }
       this.focusInput();
     }
   }
@@ -1105,7 +1214,18 @@ class TypingApp {
   }
 
   speakSpeakingSample() {
-    if (!this.currentSpeakingPassage) {
+    let targetText = '';
+    if (this.currentSpeakingPassage && this.currentSpeakingPassage.text) {
+      targetText = this.currentSpeakingPassage.text;
+    } else if (this.currentPassage && this.currentPassage.text) {
+      targetText = this.currentPassage.text;
+    } else if (this.dom.speakingTargetText) {
+      targetText = this.dom.speakingTargetText.innerText || this.dom.speakingTargetText.textContent || '';
+    }
+
+    targetText = targetText.replace(/\+/g, ' ').trim();
+
+    if (!targetText) {
       Notify.warning('Chưa có bài luyện nói nào để phát âm mẫu. Hãy nạp bài mới!');
       return;
     }
@@ -1114,40 +1234,35 @@ class TypingApp {
       return;
     }
 
-    const rate = parseFloat(this.dom.speakRateSelect.value || '1.0');
-    const gender = this.dom.speakVoiceGenderSelect.value || 'female';
+    const rate = this.dom.speakRateSelect ? parseFloat(this.dom.speakRateSelect.value || '1.0') : 1.0;
+    const gender = this.dom.speakVoiceGenderSelect ? this.dom.speakVoiceGenderSelect.value : (this.selectedVoiceGender || 'google');
 
-    if (!('speechSynthesis' in window)) {
-      Notify.warning('Trình duyệt của bạn không hỗ trợ tính năng phát âm Text-to-Speech.');
-      return;
+    if (this.dom.btnSpeakListenSample) {
+      this.dom.btnSpeakListenSample.classList.add('active');
+      this.dom.btnSpeakListenSample.textContent = '⏹️ Dừng đọc mẫu';
     }
-    window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(this.currentSpeakingPassage.text);
-    utterance.lang = 'en-US';
-    utterance.rate = rate;
-
-    const { voice, pitch } = this.getVoice(gender);
-    if (voice) utterance.voice = voice;
-    utterance.pitch = pitch;
-
-    this.isSpeaking = true;
-    this.dom.btnSpeakListenSample.classList.add('active');
-    this.dom.btnSpeakListenSample.textContent = '⏹️ Dừng đọc mẫu';
-
-    utterance.onend = () => {
+    const finishCallback = () => {
       this.isSpeaking = false;
-      this.dom.btnSpeakListenSample.classList.remove('active');
-      this.dom.btnSpeakListenSample.textContent = '🔊 Nghe mẫu';
+      if (this.dom.btnSpeakListenSample) {
+        this.dom.btnSpeakListenSample.classList.remove('active');
+        this.dom.btnSpeakListenSample.textContent = '🔊 Nghe mẫu';
+      }
     };
 
-    utterance.onerror = () => {
-      this.isSpeaking = false;
-      this.dom.btnSpeakListenSample.classList.remove('active');
-      this.dom.btnSpeakListenSample.textContent = '🔊 Nghe mẫu';
-    };
-
-    window.speechSynthesis.speak(utterance);
+    if (gender === 'google') {
+      this.playGoogleTTS(
+        targetText,
+        rate,
+        finishCallback,
+        () => {
+          // Fallback: WebSpeech Google US voice
+          this.speakWebSpeech(targetText, rate, 'google', finishCallback, finishCallback);
+        }
+      );
+    } else {
+      this.speakWebSpeech(targetText, rate, gender, finishCallback, finishCallback);
+    }
   }
 
   // Live Microphone Recording & Speech-to-Text Recognition
@@ -1755,7 +1870,6 @@ class TypingApp {
     this.currentIndexInText = 0;
     this.applyHintState();
     this.updateCaretPosition();
-    this.updateVirtualKeyboardTargetKey();
   }
 
   updateProgressBar() {
@@ -1871,7 +1985,6 @@ class TypingApp {
     this.updateCaretPosition();
     this.updateProgressBar();
     this.updateLiveStats();
-    this.updateVirtualKeyboardTargetKey();
 
     // Auto Pronounce Word When Completed (on Space, Enter, or End of Passage)
     if (inputChar === ' ' || inputChar === '\n' || this.currentIndexInText >= this.charElements.length) {
@@ -1908,7 +2021,6 @@ class TypingApp {
     this.updateCaretPosition();
     this.updateProgressBar();
     this.updateLiveStats();
-    this.updateVirtualKeyboardTargetKey();
     this.playKeySound(false);
   }
 
@@ -2006,7 +2118,6 @@ class TypingApp {
     this.dom.statErrors.textContent = '0';
     this.dom.statTime.textContent = '00:00';
     if (this.dom.progressBarFill) this.dom.progressBarFill.style.width = '0%';
-    this.updateVirtualKeyboardTargetKey();
   }
 
   // =================================================================
@@ -2015,7 +2126,6 @@ class TypingApp {
   completeSession() {
     this.isFinished = true;
     if (this.timerInterval) clearInterval(this.timerInterval);
-    this.updateVirtualKeyboardTargetKey();
 
     const stats = this.calculateStats();
 
@@ -2085,12 +2195,12 @@ class TypingApp {
 
     this.dom.historyTbody.innerHTML = history.map(item => `
       <tr>
-        <td>${item.date}</td>
-        <td><strong>${item.title}</strong></td>
-        <td><span class="badge badge-level" style="font-size: 0.7rem;">${item.mode}</span></td>
-        <td><strong>${item.wpm}</strong> WPM</td>
-        <td style="color: var(--success-color); font-weight: 700;">${item.accuracy}</td>
-        <td style="color: ${item.errors > 0 ? 'var(--danger-color)' : 'var(--text-muted)'};">${item.errors}</td>
+        <td class="history-cell-time">${item.date || '--:--'}</td>
+        <td class="history-cell-title"><strong>${item.title || 'Bài luyện tập'}</strong></td>
+        <td class="history-cell-mode"><span class="history-mode-tag">${item.mode || 'Luyện viết'}</span></td>
+        <td class="history-cell-wpm"><span class="wpm-val">${item.wpm}</span> <span class="wpm-unit">WPM</span></td>
+        <td class="history-cell-acc"><span class="acc-val">${item.accuracy}</span></td>
+        <td class="history-cell-errors"><span class="error-val ${item.errors > 0 ? 'has-error' : 'no-error'}">${item.errors}</span></td>
       </tr>
     `).join('');
   }
@@ -2114,11 +2224,9 @@ class TypingApp {
   }
 
   loadSavedPreferences() {
-    // Default theme = light
+    // Load & apply saved theme
     const theme = localStorage.getItem('eng_write_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', theme);
-    this.currentThemeIndex = Math.max(0, this.themeList.indexOf(theme));
-    this.dom.themeName.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+    this.setTheme(theme);
 
     const sound = localStorage.getItem('eng_write_sound');
     if (sound !== null) {
@@ -2132,262 +2240,64 @@ class TypingApp {
     }
     this.applyHintState();
 
-    const voiceGender = localStorage.getItem('eng_write_voice_gender') || 'female';
+    const voiceGender = localStorage.getItem('eng_write_voice_gender') || 'google';
     this.selectedVoiceGender = voiceGender;
     if (this.dom.voiceGenderSelect) {
       this.dom.voiceGenderSelect.value = voiceGender;
     }
-
-    const vkPref = localStorage.getItem('eng_write_virtual_kb');
-    if (vkPref === 'true') {
-      this.toggleVirtualKeyboard(true);
+    if (this.dom.speakVoiceGenderSelect) {
+      this.dom.speakVoiceGenderSelect.value = voiceGender;
     }
+
+    const savedRate = localStorage.getItem('eng_speak_rate') || '1.0';
+    if (this.dom.writeRateSelect) {
+      this.dom.writeRateSelect.value = savedRate;
+    }
+    if (this.dom.speakRateSelect) {
+      this.dom.speakRateSelect.value = savedRate;
+    }
+
+    const savedFontSize = localStorage.getItem('eng_write_font_size') || '22';
+    this.setFontSize(savedFontSize);
   }
 
-  // =================================================================
-  // Mobile & On-Screen Virtual Keyboard Engine (Bàn Phím Ảo Điện Thoại)
-  // =================================================================
-  toggleVirtualKeyboard(forceState = null) {
-    if (forceState !== null) {
-      this.isVirtualKeyboardVisible = forceState;
-    } else {
-      this.isVirtualKeyboardVisible = !this.isVirtualKeyboardVisible;
+  setTheme(themeName) {
+    if (!this.themeList.includes(themeName)) {
+      themeName = 'light';
     }
-
-    if (this.dom.virtualKeyboardContainer) {
-      this.dom.virtualKeyboardContainer.style.display = this.isVirtualKeyboardVisible ? 'block' : 'none';
+    document.documentElement.setAttribute('data-theme', themeName);
+    this.currentThemeIndex = this.themeList.indexOf(themeName);
+    const themeDisplayNames = {
+      light: 'Sáng',
+      dark: 'Tối',
+      cyberpunk: 'Neon',
+      forest: 'Rừng'
+    };
+    if (this.dom.themeName) {
+      this.dom.themeName.textContent = themeDisplayNames[themeName] || (themeName.charAt(0).toUpperCase() + themeName.slice(1));
     }
+    localStorage.setItem('eng_write_theme', themeName);
 
-    if (this.dom.btnToggleVirtualKb) {
-      if (this.isVirtualKeyboardVisible) {
-        this.dom.btnToggleVirtualKb.classList.add('active');
-        this.dom.btnToggleVirtualKb.innerHTML = '📱 Ẩn bàn phím';
+    // Update active class on all theme palette buttons
+    document.querySelectorAll('.theme-choice-btn').forEach(btn => {
+      if (btn.dataset.theme === themeName) {
+        btn.classList.add('active');
       } else {
-        this.dom.btnToggleVirtualKb.classList.remove('active');
-        this.dom.btnToggleVirtualKb.innerHTML = '📱 Bàn phím ảo';
+        btn.classList.remove('active');
       }
-    }
-
-    localStorage.setItem('eng_write_virtual_kb', this.isVirtualKeyboardVisible.toString());
-
-    if (this.isVirtualKeyboardVisible) {
-      this.renderVirtualKeyboard();
-      this.updateVirtualKeyboardTargetKey();
-      setTimeout(() => {
-        if (this.dom.virtualKeyboardContainer) {
-          this.dom.virtualKeyboardContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 100);
-    }
-  }
-
-  triggerHapticFeedback() {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      try {
-        navigator.vibrate(12);
-      } catch (e) {}
-    }
-  }
-
-  renderVirtualKeyboard() {
-    if (!this.dom.virtualKeyboardBoard) return;
-    const board = this.dom.virtualKeyboardBoard;
-    board.innerHTML = '';
-
-    let rows = [];
-
-    if (this.vkMode === 'symbols') {
-      rows = [
-        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-        ['@', '#', '$', '%', '&', '*', '-', '+', '(', ')'],
-        ['!', '"', "'", ':', ';', '/', '?', ',', '.'],
-        [
-          { type: 'mode', label: 'ABC', key: 'MODE_ABC' },
-          { type: 'char', char: '_' },
-          { type: 'char', char: '/' },
-          { type: 'char', char: '\\' },
-          { type: 'char', char: '=' },
-          { type: 'backspace', label: '⌫ Xóa', key: 'BACKSPACE' }
-        ],
-        [
-          { type: 'space', label: 'Khoảng trắng (Space)', key: ' ' },
-          { type: 'enter', label: '↵ Xuống dòng', key: '\n' }
-        ]
-      ];
-    } else {
-      // Letters mode (QWERTY)
-      const r1 = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'];
-      const r2 = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
-      const r3Chars = ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.'];
-
-      const row1Keys = r1.map(ch => this.vkShift ? ch.toUpperCase() : ch);
-      const row2Keys = r2.map(ch => this.vkShift ? ch.toUpperCase() : ch);
-      const row3Keys = [
-        { type: 'shift', label: this.vkShift ? '⬆ IN HOA' : '⇧ Shift', key: 'SHIFT', active: this.vkShift },
-        ...r3Chars.map(ch => (this.vkShift && ch.length === 1 && /[a-z]/i.test(ch)) ? ch.toUpperCase() : ch),
-        { type: 'backspace', label: '⌫', key: 'BACKSPACE' }
-      ];
-      const row4Keys = [
-        { type: 'mode', label: '?123', key: 'MODE_123' },
-        { type: 'char', char: "'" },
-        { type: 'space', label: 'Khoảng trắng (Space)', key: ' ' },
-        { type: 'char', char: '-' },
-        { type: 'enter', label: '↵ Enter', key: '\n' }
-      ];
-
-      rows = [row1Keys, row2Keys, row3Keys, row4Keys];
-    }
-
-    rows.forEach(rowArr => {
-      const rowEl = document.createElement('div');
-      rowEl.className = 'vk-row';
-
-      rowArr.forEach(item => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'vk-key';
-
-        let keyVal = '';
-        let displayLabel = '';
-
-        if (typeof item === 'string') {
-          keyVal = item;
-          displayLabel = item;
-          btn.dataset.key = keyVal;
-        } else {
-          keyVal = item.key || item.char || '';
-          displayLabel = item.label || item.char || '';
-          btn.dataset.key = keyVal;
-
-          if (item.type === 'shift') {
-            btn.classList.add('vk-key-func', 'vk-key-shift');
-            if (item.active) btn.classList.add('active');
-          } else if (item.type === 'backspace') {
-            btn.classList.add('vk-key-func', 'vk-key-backspace');
-          } else if (item.type === 'mode') {
-            btn.classList.add('vk-key-func', 'vk-key-mode');
-          } else if (item.type === 'space') {
-            btn.classList.add('vk-key-space');
-          } else if (item.type === 'enter') {
-            btn.classList.add('vk-key-enter');
-          }
-        }
-
-        btn.textContent = displayLabel;
-
-        // Touch & Click event
-        const onActivate = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          btn.classList.add('is-pressed');
-          setTimeout(() => btn.classList.remove('is-pressed'), 120);
-          this.triggerHapticFeedback();
-          this.handleVirtualKeyPress(keyVal);
-        };
-
-        btn.addEventListener('touchstart', onActivate, { passive: false });
-        btn.addEventListener('mousedown', onActivate);
-
-        rowEl.appendChild(btn);
-      });
-
-      board.appendChild(rowEl);
     });
-
-    this.updateVirtualKeyboardTargetKey();
   }
 
-  handleVirtualKeyPress(keyVal) {
-    if (keyVal === 'SHIFT') {
-      this.vkShift = !this.vkShift;
-      this.renderVirtualKeyboard();
-      return;
+  setFontSize(sizePx) {
+    this.fontSize = parseInt(sizePx, 10) || 22;
+    if (this.dom.typingDisplay) {
+      this.dom.typingDisplay.style.fontSize = `${this.fontSize}px`;
     }
-
-    if (keyVal === 'MODE_123') {
-      this.vkMode = 'symbols';
-      this.renderVirtualKeyboard();
-      return;
+    if (this.dom.fontSizeSelect) {
+      this.dom.fontSizeSelect.value = this.fontSize.toString();
     }
-
-    if (keyVal === 'MODE_ABC') {
-      this.vkMode = 'letters';
-      this.renderVirtualKeyboard();
-      return;
-    }
-
-    if (keyVal === 'BACKSPACE') {
-      this.handleBackspace();
-      return;
-    }
-
-    if (keyVal) {
-      this.handleCharacterInput(keyVal);
-      // Auto toggle off Shift after typing 1 uppercase character
-      if (this.vkShift) {
-        this.vkShift = false;
-        this.renderVirtualKeyboard();
-      }
-    }
-  }
-
-  updateVirtualKeyboardTargetKey() {
-    if (!this.dom.virtualKeyboardBoard) return;
-    
-    // Clear previous targets
-    this.dom.virtualKeyboardBoard.querySelectorAll('.vk-key.is-target').forEach(el => {
-      el.classList.remove('is-target');
-    });
-
-    if (!this.currentPassage || this.currentIndexInText >= this.charElements.length || this.isFinished) {
-      if (this.dom.vkTargetKeyChar) this.dom.vkTargetKeyChar.textContent = 'Hoàn thành 🎉';
-      return;
-    }
-
-    const nextChar = this.currentPassage.text[this.currentIndexInText];
-    let displayCharName = nextChar;
-    if (nextChar === ' ') displayCharName = 'Space (Khoảng trắng)';
-    else if (nextChar === '\n') displayCharName = 'Enter (Xuống dòng)';
-    
-    if (this.dom.vkTargetKeyChar) {
-      this.dom.vkTargetKeyChar.textContent = displayCharName;
-    }
-
-    if (!this.isVirtualKeyboardVisible) return;
-
-    // Highlight key in board
-    const keys = this.dom.virtualKeyboardBoard.querySelectorAll('.vk-key');
-    let matchedKey = null;
-
-    for (const keyEl of keys) {
-      const k = keyEl.dataset.key;
-      if (!k) continue;
-
-      if (k === nextChar) {
-        matchedKey = keyEl;
-        break;
-      }
-      if (nextChar === ' ' && (k === ' ' || keyEl.classList.contains('vk-key-space'))) {
-        matchedKey = keyEl;
-        break;
-      }
-      if (nextChar === '\n' && (k === '\n' || keyEl.classList.contains('vk-key-enter'))) {
-        matchedKey = keyEl;
-        break;
-      }
-      if (this.cleanCharForTyping(k) === this.cleanCharForTyping(nextChar)) {
-        matchedKey = keyEl;
-        break;
-      }
-      if (k.toLowerCase() === nextChar.toLowerCase()) {
-        matchedKey = keyEl;
-        break;
-      }
-    }
-
-    if (matchedKey) {
-      matchedKey.classList.add('is-target');
-    }
+    localStorage.setItem('eng_write_font_size', this.fontSize.toString());
+    this.updateCaretPosition();
   }
 
   // =================================================================
@@ -2435,33 +2345,104 @@ class TypingApp {
     }, 100);
   }
 
+  // =================================================================
+  // User Guide Modal Methods (Hướng Dẫn Sử Dụng Website)
+  // =================================================================
+  openGuideModal(tab = 'writing') {
+    this.switchGuideTab(tab);
+    if (this.dom.guideModal) {
+      this.dom.guideModal.classList.add('active');
+    }
+  }
+
+  closeGuideModal() {
+    if (this.dom.guideModal) {
+      this.dom.guideModal.classList.remove('active');
+    }
+  }
+
+  switchGuideTab(tab) {
+    const tabs = ['writing', 'speaking', 'manage', 'sync', 'shortcuts'];
+    const tabBtns = {
+      writing: this.dom.tabBtnGuideWriting,
+      speaking: this.dom.tabBtnGuideSpeaking,
+      manage: this.dom.tabBtnGuideManage,
+      sync: this.dom.tabBtnGuideSync,
+      shortcuts: this.dom.tabBtnGuideShortcuts
+    };
+    const tabPanes = {
+      writing: this.dom.guidePaneWriting,
+      speaking: this.dom.guidePaneSpeaking,
+      manage: this.dom.guidePaneManage,
+      sync: this.dom.guidePaneSync,
+      shortcuts: this.dom.guidePaneShortcuts
+    };
+
+    tabs.forEach(t => {
+      if (tabBtns[t]) {
+        if (t === tab) tabBtns[t].classList.add('active');
+        else tabBtns[t].classList.remove('active');
+      }
+      if (tabPanes[t]) {
+        if (t === tab) tabPanes[t].style.display = 'block';
+        else tabPanes[t].style.display = 'none';
+      }
+    });
+  }
+
   bindEvents() {
     // Focus bindings
     this.dom.typingContainer.addEventListener('click', () => this.focusInput());
     this.dom.focusOverlay.addEventListener('click', () => this.focusInput());
 
-    // Virtual Keyboard Toolbar Controls
-    if (this.dom.btnToggleVirtualKb) {
-      this.dom.btnToggleVirtualKb.addEventListener('click', () => {
-        this.toggleVirtualKeyboard();
+    // Utility Navbar Menu Dropdown
+    if (this.dom.btnMenuTrigger && this.dom.menuDropdownWrapper) {
+      this.dom.btnMenuTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.dom.menuDropdownWrapper.classList.toggle('is-open');
       });
-    }
 
-    if (this.dom.btnVkSpeakCur) {
-      this.dom.btnVkSpeakCur.addEventListener('click', () => {
-        const curWord = this.getWordAtCharIndex(this.currentIndexInText);
-        if (curWord) {
-          this.speakWord(curWord);
-        } else if (this.currentPassage) {
-          this.speakText(this.currentPassage.text);
+      document.addEventListener('click', (e) => {
+        if (this.dom.menuDropdownWrapper && !this.dom.menuDropdownWrapper.contains(e.target)) {
+          this.dom.menuDropdownWrapper.classList.remove('is-open');
         }
       });
     }
 
-    if (this.dom.btnVkHide) {
-      this.dom.btnVkHide.addEventListener('click', () => {
-        this.toggleVirtualKeyboard(false);
+    // User Guide Modal Events
+    if (this.dom.btnOpenGuideModal) {
+      this.dom.btnOpenGuideModal.addEventListener('click', () => {
+        if (this.dom.menuDropdownWrapper) this.dom.menuDropdownWrapper.classList.remove('is-open');
+        this.openGuideModal('writing');
       });
+    }
+
+    if (this.dom.btnGuideClose) {
+      this.dom.btnGuideClose.addEventListener('click', () => {
+        this.closeGuideModal();
+      });
+    }
+
+    if (this.dom.btnGuideCloseTop) {
+      this.dom.btnGuideCloseTop.addEventListener('click', () => {
+        this.closeGuideModal();
+      });
+    }
+
+    if (this.dom.tabBtnGuideWriting) {
+      this.dom.tabBtnGuideWriting.addEventListener('click', () => this.switchGuideTab('writing'));
+    }
+    if (this.dom.tabBtnGuideSpeaking) {
+      this.dom.tabBtnGuideSpeaking.addEventListener('click', () => this.switchGuideTab('speaking'));
+    }
+    if (this.dom.tabBtnGuideManage) {
+      this.dom.tabBtnGuideManage.addEventListener('click', () => this.switchGuideTab('manage'));
+    }
+    if (this.dom.tabBtnGuideSync) {
+      this.dom.tabBtnGuideSync.addEventListener('click', () => this.switchGuideTab('sync'));
+    }
+    if (this.dom.tabBtnGuideShortcuts) {
+      this.dom.tabBtnGuideShortcuts.addEventListener('click', () => this.switchGuideTab('shortcuts'));
     }
 
     // Close IME Telex Alert
@@ -2520,7 +2501,8 @@ class TypingApp {
       if (this.dom.resultModal.classList.contains('active') || 
           this.dom.customTextModal.classList.contains('active') ||
           this.dom.manageTextsModal.classList.contains('active') ||
-          (this.dom.syncModal && this.dom.syncModal.classList.contains('active'))) {
+          (this.dom.syncModal && this.dom.syncModal.classList.contains('active')) ||
+          (this.dom.guideModal && this.dom.guideModal.classList.contains('active'))) {
         return;
       }
 
@@ -2550,6 +2532,62 @@ class TypingApp {
     // Speaking Workspace Actions
     if (this.dom.btnSpeakListenSample) {
       this.dom.btnSpeakListenSample.addEventListener('click', () => this.speakSpeakingSample());
+    }
+
+    // Voice & Rate Selectors in Writing Mode
+    if (this.dom.voiceGenderSelect) {
+      this.dom.voiceGenderSelect.addEventListener('change', (e) => {
+        this.selectedVoiceGender = e.target.value;
+        localStorage.setItem('eng_write_voice_gender', this.selectedVoiceGender);
+        if (this.dom.speakVoiceGenderSelect) {
+          this.dom.speakVoiceGenderSelect.value = this.selectedVoiceGender;
+        }
+        if (this.isSpeaking && this.currentPassage) {
+          this.stopSpeech();
+          this.toggleSpeakPassage();
+        }
+      });
+    }
+
+    if (this.dom.writeRateSelect) {
+      this.dom.writeRateSelect.addEventListener('change', (e) => {
+        localStorage.setItem('eng_speak_rate', e.target.value);
+        if (this.dom.speakRateSelect) {
+          this.dom.speakRateSelect.value = e.target.value;
+        }
+        if (this.isSpeaking && this.currentPassage) {
+          this.stopSpeech();
+          this.toggleSpeakPassage();
+        }
+      });
+    }
+
+    // Voice & Rate Selectors in Speaking Mode
+    if (this.dom.speakVoiceGenderSelect) {
+      this.dom.speakVoiceGenderSelect.addEventListener('change', (e) => {
+        this.selectedVoiceGender = e.target.value;
+        localStorage.setItem('eng_write_voice_gender', this.selectedVoiceGender);
+        if (this.dom.voiceGenderSelect) {
+          this.dom.voiceGenderSelect.value = this.selectedVoiceGender;
+        }
+        if (this.isSpeaking) {
+          this.stopSpeech();
+          this.speakSpeakingSample();
+        }
+      });
+    }
+
+    if (this.dom.speakRateSelect) {
+      this.dom.speakRateSelect.addEventListener('change', (e) => {
+        localStorage.setItem('eng_speak_rate', e.target.value);
+        if (this.dom.writeRateSelect) {
+          this.dom.writeRateSelect.value = e.target.value;
+        }
+        if (this.isSpeaking) {
+          this.stopSpeech();
+          this.speakSpeakingSample();
+        }
+      });
     }
 
     if (this.dom.btnRecordMic) {
@@ -2590,24 +2628,10 @@ class TypingApp {
       });
     }
 
-    // Font Size Adjust
-    if (this.dom.btnFontSizeInc) {
-      this.dom.btnFontSizeInc.addEventListener('click', () => {
-        if (this.fontSize < 2.2) {
-          this.fontSize += 0.15;
-          this.dom.typingDisplay.style.fontSize = `${this.fontSize}rem`;
-          this.updateCaretPosition();
-        }
-      });
-    }
-
-    if (this.dom.btnFontSizeDec) {
-      this.dom.btnFontSizeDec.addEventListener('click', () => {
-        if (this.fontSize > 1.0) {
-          this.fontSize -= 0.15;
-          this.dom.typingDisplay.style.fontSize = `${this.fontSize}rem`;
-          this.updateCaretPosition();
-        }
+    // Font Size Select by Number
+    if (this.dom.fontSizeSelect) {
+      this.dom.fontSizeSelect.addEventListener('change', (e) => {
+        this.setFontSize(e.target.value);
       });
     }
 
@@ -2634,16 +2658,13 @@ class TypingApp {
       });
     }
 
-    // Theme Switcher
-    if (this.dom.btnThemeToggle) {
-      this.dom.btnThemeToggle.addEventListener('click', () => {
-        this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themeList.length;
-        const theme = this.themeList[this.currentThemeIndex];
-        document.documentElement.setAttribute('data-theme', theme);
-        this.dom.themeName.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
-        localStorage.setItem('eng_write_theme', theme);
+    // Theme Palette Selectors (Chọn trực tiếp 4 màu: Sáng, Tối, Neon, Rừng)
+    document.querySelectorAll('.theme-choice-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const theme = e.currentTarget.dataset.theme;
+        this.setTheme(theme);
       });
-    }
+    });
 
     // Result Modal Actions
     if (this.dom.btnModalRetry) {
@@ -2690,6 +2711,23 @@ class TypingApp {
       this.dom.btnModalAddNew.addEventListener('click', () => {
         this.dom.manageTextsModal.classList.remove('active');
         this.openCustomModal();
+      });
+    }
+
+    // Toggle Manage Tips (Bóng đèn Mẹo)
+    if (this.dom.btnToggleManageTips && this.dom.manageInfoBox) {
+      this.dom.btnToggleManageTips.addEventListener('click', () => {
+        this.dom.manageInfoBox.classList.toggle('is-open');
+        this.dom.btnToggleManageTips.classList.toggle('active');
+      });
+    }
+
+    if (this.dom.btnCloseManageTips && this.dom.manageInfoBox) {
+      this.dom.btnCloseManageTips.addEventListener('click', () => {
+        this.dom.manageInfoBox.classList.remove('is-open');
+        if (this.dom.btnToggleManageTips) {
+          this.dom.btnToggleManageTips.classList.remove('active');
+        }
       });
     }
 
@@ -2840,6 +2878,7 @@ class TypingApp {
     // ===============================================================
     if (this.dom.btnOpenSyncModal) {
       this.dom.btnOpenSyncModal.addEventListener('click', () => {
+        if (this.dom.menuDropdownWrapper) this.dom.menuDropdownWrapper.classList.remove('is-open');
         this.openSyncModal();
       });
     }
@@ -2859,12 +2898,6 @@ class TypingApp {
     if (this.dom.tabBtnImportCode) {
       this.dom.tabBtnImportCode.addEventListener('click', () => {
         this.switchSyncTab('import');
-      });
-    }
-
-    if (this.dom.tabBtnFile) {
-      this.dom.tabBtnFile.addEventListener('click', () => {
-        this.switchSyncTab('file');
       });
     }
 
@@ -2897,29 +2930,6 @@ class TypingApp {
     if (this.dom.btnApplySyncCode) {
       this.dom.btnApplySyncCode.addEventListener('click', () => {
         this.applySyncCode();
-      });
-    }
-
-    if (this.dom.btnExportBackup) {
-      this.dom.btnExportBackup.addEventListener('click', () => {
-        this.exportBackupData();
-      });
-    }
-
-    if (this.dom.btnTriggerImport) {
-      this.dom.btnTriggerImport.addEventListener('click', () => {
-        if (this.dom.backupFileInput) {
-          this.dom.backupFileInput.value = '';
-          this.dom.backupFileInput.click();
-        }
-      });
-    }
-
-    if (this.dom.backupFileInput) {
-      this.dom.backupFileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-          this.importBackupData(e.target.files[0]);
-        }
       });
     }
 

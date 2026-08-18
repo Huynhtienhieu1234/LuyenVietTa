@@ -45,19 +45,68 @@
         </div>
 
 
-        <button class="btn-icon" id="btn-theme-toggle" title="Đổi giao diện">
-          🎨 <span id="theme-name">Light</span>
-        </button>
+        <!-- Utility Navbar Menu Dropdown -->
+        <div class="menu-dropdown-wrapper" id="menu-dropdown-wrapper">
+          <button type="button" class="btn-icon btn-menu-trigger" id="btn-menu-trigger"
+            title="Mở menu tiện ích & cài đặt">
+            <span class="menu-trigger-icon">☰</span>
+            <span class="menu-trigger-text">Menu</span>
+            <span class="menu-trigger-arrow">▾</span>
+          </button>
 
-        <!-- 1-Click Device Sync Button -->
-        <button class="btn-icon btn-sync-accent" id="btn-open-sync-modal"
-          title="Đồng bộ toàn bộ bài đã nạp sang điện thoại hoặc thiết bị khác nhanh chóng">
-          🔄 <span>Mã đồng bộ</span>
-        </button>
+          <div class="menu-dropdown-list" id="menu-dropdown-list">
+            <!-- Theme Direct Selector Palette -->
+            <div class="menu-theme-section">
+              <div class="menu-section-header">
+                <span class="menu-section-title">🎨 Giao diện: <strong id="theme-name">Light</strong></span>
+              </div>
+              <div class="theme-palette-grid">
+                <button type="button" class="theme-choice-btn active" data-theme="light" title="Giao diện Sáng (Light)">
+                  <span class="theme-swatch swatch-light"></span>
+                  <span class="theme-choice-name">Sáng</span>
+                </button>
+                <button type="button" class="theme-choice-btn" data-theme="dark" title="Giao diện Tối (Dark)">
+                  <span class="theme-swatch swatch-dark"></span>
+                  <span class="theme-choice-name">Tối</span>
+                </button>
+                <button type="button" class="theme-choice-btn" data-theme="cyberpunk" title="Giao diện Neon Cyberpunk">
+                  <span class="theme-swatch swatch-cyberpunk"></span>
+                  <span class="theme-choice-name">Neon</span>
+                </button>
+                <button type="button" class="theme-choice-btn" data-theme="forest" title="Giao diện Rừng Xanh Forest">
+                  <span class="theme-swatch swatch-forest"></span>
+                  <span class="theme-choice-name">Rừng</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="menu-divider"></div>
+
+            <!-- User Guide Modal -->
+            <button type="button" class="menu-dropdown-item" id="btn-open-guide-modal"
+              title="Xem hướng dẫn sử dụng toàn diện">
+              <span class="menu-item-icon">📖</span>
+              <span class="menu-item-info">
+                <span class="menu-item-title">Hướng dẫn sử dụng</span>
+                <span class="menu-item-desc">Cách gõ, luyện nói</span>
+              </span>
+            </button>
+
+            <!-- 2-Way Sync Modal -->
+            <button type="button" class="menu-dropdown-item" id="btn-open-sync-modal"
+              title="Đồng bộ bài học giữa máy tính và điện thoại">
+              <span class="menu-item-icon">🔄</span>
+              <span class="menu-item-info">
+                <span class="menu-item-title">Mã đồng bộ thiết bị</span>
+                <span class="menu-item-desc">Mã PIN 6 số, mã QR</span>
+              </span>
+            </button>
+          </div>
+        </div>
 
         <button class="btn-icon btn-primary-accent" id="btn-custom-text"
           title="Nạp thêm đoạn văn tiếng Anh mới để luyện tập">
-          📥 Nạp bài mới
+          📥 <span>Nạp bài mới</span>
         </button>
       </div>
     </div>
@@ -131,43 +180,59 @@
     <section class="typing-stage-card" id="stage-card">
       <div class="stage-header">
         <div class="passage-meta">
-          <span class="badge badge-level" id="passage-level">Bài của tôi</span>
           <span class="passage-title" id="passage-title">Đoạn văn luyện tập</span>
-          <button class="btn-tool" id="btn-delete-current-custom"
-            style="display: none; width: 28px; height: 28px; font-size: 0.75rem; color: var(--danger-color);"
-            title="Xóa bài viết này khỏi bộ nhớ">
-            🗑️
-          </button>
         </div>
 
         <div class="stage-tools">
           <!-- Voice Selector -->
           <div class="voice-selector-wrapper">
-            <span class="voice-label">Giọng đọc:</span>
+            <span class="voice-label">Giọng:</span>
             <select id="voice-gender-select" class="voice-select" title="Chọn giọng phát âm tiếng Anh">
-              <option value="female">👩 Nữ (Female US/UK)</option>
-              <option value="male">👨 Nam (Male US/UK)</option>
+              <option value="google" selected>🌐 Google US (Chuẩn)</option>
+              <option value="female">👩 Nữ bản xứ (US)</option>
+              <option value="male">👨 Nam bản xứ (US)</option>
+              <option value="uk">🇬🇧 Giọng Anh - Anh (UK)</option>
             </select>
           </div>
 
-          <button class="btn-tool" id="btn-toggle-virtual-kb" title="Bật/Tắt bàn phím ảo cảm ứng trên màn hình điện thoại">
-            📱 Bàn phím ảo
-          </button>
+          <!-- Speed Selector -->
+          <div class="voice-selector-wrapper">
+            <span class="voice-label">Tốc độ:</span>
+            <select id="write-rate-select" class="voice-select" title="Chọn tốc độ phát âm (nhanh / chậm)">
+              <option value="0.5">0.5x (Rất chậm)</option>
+              <option value="0.75">0.75x (Chậm vừa)</option>
+              <option value="1.0" selected>1.0x (Chuẩn)</option>
+              <option value="1.25">1.25x (Nhanh vừa)</option>
+              <option value="1.5">1.5x (Nhanh)</option>
+              <option value="1.75">1.75x (Rất nhanh)</option>
+              <option value="2.0">2.0x (Siêu tốc)</option>
+            </select>
+          </div>
+
           <button class="btn-tool" id="btn-toggle-hint" title="Bật/Tắt hiển thị chữ mẫu gợi ý">
             👁️ Gợi ý: Bật
           </button>
           <button class="btn-tool" id="btn-speak-all" title="Nghe phát âm toàn bộ đoạn văn">
             🔊 Phát âm cả bài
           </button>
-          <button class="btn-tool" id="btn-font-size-dec" title="Giảm cỡ chữ">
-            A-
-          </button>
-          <button class="btn-tool" id="btn-font-size-inc" title="Tăng cỡ chữ">
-            A+
-          </button>
-          <button class="btn-tool" id="btn-random-text" title="Đổi bài ngẫu nhiên">
-            🎲 Đổi bài
-          </button>
+
+          <!-- Font Size Numeric Selector -->
+          <div class="font-size-selector-wrapper">
+            <span class="font-size-label">Cỡ chữ:</span>
+            <select id="font-size-select" class="font-size-select" title="Chọn cỡ chữ hiển thị (px)">
+              <option value="16">16px</option>
+              <option value="18">18px</option>
+              <option value="20">20px</option>
+              <option value="22" selected>22px</option>
+              <option value="24">24px</option>
+              <option value="26">26px</option>
+              <option value="28">28px</option>
+              <option value="32">32px</option>
+              <option value="36">36px</option>
+            </select>
+          </div>
+
+
         </div>
       </div>
 
@@ -209,29 +274,6 @@
         </div>
       </div>
 
-      <!-- Interactive On-Screen Virtual Keyboard for Mobile / Touch Devices -->
-      <div class="virtual-keyboard-wrapper" id="virtual-keyboard-container" style="display: none;">
-        <div class="virtual-keyboard-header">
-          <div class="vk-header-info">
-            <span class="vk-badge">📱 Bàn phím điện thoại cảm ứng</span>
-            <span class="vk-hint-next" id="vk-next-key-indicator">Phím tiếp theo: <strong id="vk-target-key-char">...</strong></span>
-          </div>
-          <div class="vk-header-actions">
-            <button type="button" class="vk-tool-btn" id="btn-vk-speak-cur" title="Đọc phát âm từ hiện tại">
-              🔊 Nghe từ
-            </button>
-            <button type="button" class="vk-tool-btn" id="btn-vk-hide" title="Thu gọn bàn phím ảo">
-              ✕ Thu gọn
-            </button>
-          </div>
-        </div>
-
-        <!-- Keyboard Key Matrix (Generated dynamically & interactive) -->
-        <div class="virtual-keyboard-board" id="virtual-keyboard-board">
-          <!-- Keys rendered via JS -->
-        </div>
-      </div>
-
       <!-- Stage Bottom Action Bar -->
       <div class="stage-footer">
         <div class="footer-left-tools">
@@ -256,7 +298,6 @@
         <div class="speaking-col-left">
           <div class="speaking-header-box">
             <div class="speaking-meta-row">
-              <span class="badge badge-level" id="speak-passage-level">Level A1</span>
               <h2 class="speaking-passage-title" id="speak-passage-title">Bài luyện nói</h2>
             </div>
 
@@ -265,18 +306,24 @@
               <div class="voice-selector-wrapper">
                 <span class="voice-label">Giọng:</span>
                 <select id="speak-voice-gender-select" class="voice-select" title="Chọn giọng mẫu tiếng Anh">
-                  <option value="female">👩 Nữ (US)</option>
-                  <option value="male">👨 Nam (US)</option>
+                  <option value="google" selected>🌐 Google US (Chuẩn)</option>
+                  <option value="female">👩 Nữ bản xứ (US)</option>
+                  <option value="male">👨 Nam bản xứ (US)</option>
+                  <option value="uk">🇬🇧 Giọng Anh - Anh (UK)</option>
                 </select>
               </div>
 
               <!-- Speed Selector -->
               <div class="voice-selector-wrapper">
                 <span class="voice-label">Tốc độ:</span>
-                <select id="speak-rate-select" class="voice-select" title="Tốc độ phát âm mẫu">
-                  <option value="1.0">1.0x</option>
-                  <option value="0.8">0.8x</option>
-                  <option value="0.6">0.6x</option>
+                <select id="speak-rate-select" class="voice-select" title="Chọn tốc độ phát âm mẫu (nhanh / chậm)">
+                  <option value="0.5">0.5x (Rất chậm)</option>
+                  <option value="0.75">0.75x (Chậm vừa)</option>
+                  <option value="1.0" selected>1.0x (Chuẩn)</option>
+                  <option value="1.25">1.25x (Nhanh vừa)</option>
+                  <option value="1.5">1.5x (Nhanh)</option>
+                  <option value="1.75">1.75x (Rất nhanh)</option>
+                  <option value="2.0">2.0x (Siêu tốc)</option>
                 </select>
               </div>
 
@@ -403,13 +450,16 @@
     <!-- History & Performance Tracker -->
     <section class="history-section">
       <div class="history-header">
-        <h3>📊 Lịch sử luyện tập gần đây</h3>
-        <button class="btn-icon" id="btn-clear-history" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">
+        <div class="history-title-wrap">
+          <span class="history-title-icon">📊</span>
+          <h3 class="history-title-text">Lịch sử luyện tập gần đây</h3>
+        </div>
+        <button class="btn-clear-history-custom" id="btn-clear-history" title="Xóa toàn bộ lịch sử luyện tập">
           🗑️ Xóa lịch sử
         </button>
       </div>
 
-      <div style="overflow-x: auto;">
+      <div class="history-table-wrapper">
         <table class="history-table">
           <thead>
             <tr>
@@ -531,10 +581,9 @@
         style="text-align: left; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
         <div>
           <h2 class="result-title" id="manage-modal-title" style="font-size: 1.3rem;">📚 Danh sách bài viết đã nạp</h2>
-          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bài bên dưới để bắt đầu luyện hoặc quản lý danh
-            sách:</p>
+          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bài bên dưới để bắt đầu luyện hoặc quản lý danh sách:</p>
         </div>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
           <button type="button" class="btn-action btn-danger-outline" id="btn-delete-all-custom"
             style="font-size: 0.825rem; padding: 0.45rem 0.85rem;" title="Xóa toàn bộ bài học đã nạp">
             🗑️ Xóa tất cả
@@ -543,11 +592,15 @@
             style="font-size: 0.825rem; padding: 0.45rem 0.85rem;">
             ➕ Nạp thêm bài
           </button>
+          <button type="button" class="btn-manage-tips-toggle" id="btn-toggle-manage-tips"
+            title="Bấm để xem/ẩn mẹo quản lý bài học">
+            💡 Mẹo & Lưu ý
+          </button>
         </div>
       </div>
 
-      <!-- Box Thông báo & Hướng dẫn chung -->
-      <div class="manage-info-box">
+      <!-- Box Thông báo & Hướng dẫn (Ẩn/Hiện khi bấm nút bóng đèn) -->
+      <div class="manage-info-box" id="manage-info-box">
         <div class="manage-info-icon">💡</div>
         <div class="manage-info-content">
           <strong>Thông báo & Mẹo quản lý bài học:</strong>
@@ -559,6 +612,7 @@
               thanh trên cùng.</li>
           </ul>
         </div>
+        <button type="button" class="manage-info-close-btn" id="btn-close-manage-tips" title="Đóng thông báo mẹo">✕</button>
       </div>
 
       <div class="saved-texts-list-container" id="saved-texts-list-container">
@@ -585,7 +639,6 @@
       <div class="sync-tab-nav">
         <button class="sync-tab-btn active" id="tab-btn-export-code">📤 Tạo mã xuất (Gửi đi)</button>
         <button class="sync-tab-btn" id="tab-btn-import-code">📥 Nhập mã (Nhận bài)</button>
-        <button class="sync-tab-btn" id="tab-btn-file">💾 Sao lưu File</button>
       </div>
 
       <!-- Tab 1: Export PIN & Sync Code -->
@@ -653,36 +706,217 @@
         </div>
       </div>
 
-      <!-- Tab 3: File Backup / Restore -->
-      <div class="sync-tab-pane" id="sync-pane-file" style="display: none;">
-        <div class="file-sync-grid">
-          <div class="file-sync-card">
-            <div class="file-sync-icon">⬇️</div>
-            <div class="file-sync-info">
-              <h4>Xuất dữ liệu ra file</h4>
-              <p>Tải toàn bộ bài đã nạp về máy dưới dạng file <code>.json</code> nhẹ vài KB.</p>
+      <div class="modal-actions" style="margin-top: 1.25rem;">
+        <button class="btn-action" id="btn-sync-modal-close">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Guide Modal (Hướng Dẫn Sử Dụng Website Toàn Diện) -->
+  <div class="modal-backdrop" id="guide-modal">
+    <div class="modal-dialog modal-guide-dialog" style="max-width: 680px;">
+      <div class="result-header" style="text-align: left; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h2 class="result-title" style="font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">
+            📖 Hướng Dẫn Sử Dụng Website
+          </h2>
+          <button type="button" class="btn-tool" id="btn-guide-close-top" title="Đóng hướng dẫn"
+            style="width: 32px; height: 32px;">✕</button>
+        </div>
+        <p class="result-subtitle">Nắm vững các tính năng để luyện viết gõ phím và luyện nói tiếng Anh hiệu quả nhất!
+        </p>
+      </div>
+
+      <!-- Guide Tab Navigation -->
+      <div class="sync-tab-nav guide-tab-nav">
+        <button class="sync-tab-btn active" id="tab-btn-guide-writing">✍️ Luyện Viết</button>
+        <button class="sync-tab-btn" id="tab-btn-guide-speaking">🎙️ Luyện Nói</button>
+        <button class="sync-tab-btn" id="tab-btn-guide-manage">📥 Nạp & Quản Lý</button>
+        <button class="sync-tab-btn" id="tab-btn-guide-sync">🔄 Đồng Bộ</button>
+        <button class="sync-tab-btn" id="tab-btn-guide-shortcuts">⚡ Tiện Ích & Phím Tắt</button>
+      </div>
+
+      <!-- Guide Content Panes -->
+      <!-- Tab 1: Luyện Viết -->
+      <div class="guide-tab-pane active" id="guide-pane-writing">
+        <div class="guide-card-grid">
+          <div class="guide-item-card">
+            <div class="guide-item-icon">💻</div>
+            <div class="guide-item-body">
+              <h4>1. Gõ phím trên Máy tính</h4>
+              <p>Bấm vào vùng văn bản hoặc gõ phím bất kỳ để bắt đầu. Hệ thống sẽ tự động đo thời gian, tốc độ gõ
+                (<strong>WPM</strong>), độ chính xác (%) và đếm lỗi sai theo thời gian thực.</p>
             </div>
-            <button class="btn-action btn-primary btn-block" id="btn-export-backup">
-              ⬇️ Tải file sao lưu (.json)
-            </button>
           </div>
 
-          <div class="file-sync-card">
-            <div class="file-sync-icon">⬆️</div>
-            <div class="file-sync-info">
-              <h4>Khôi phục dữ liệu từ file</h4>
-              <p>Chọn file <code>.json</code> để nạp lại toàn bộ bài viết, bài nói và streak.</p>
+          <div class="guide-item-card">
+            <div class="guide-item-icon">📱</div>
+            <div class="guide-item-body">
+              <h4>2. Gõ trên Điện thoại di động</h4>
+              <p>Chạm vào vùng văn bản trên màn hình để mở bàn phím điện thoại gốc (Gboard, iOS, Samsung...) và gõ văn
+                bản dễ dàng, mượt mà và tự động cuộn theo con trỏ.</p>
             </div>
-            <button class="btn-action btn-outline btn-block" id="btn-trigger-import">
-              ⬆️ Chọn file để khôi phục
-            </button>
-            <input type="file" id="backup-file-input" accept=".json" style="display: none;" />
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🔊</div>
+            <div class="guide-item-body">
+              <h4>3. Âm thanh & Phát âm từ vựng</h4>
+              <p>Hệ thống tự động phát âm chuẩn từng từ khi bạn gõ xong (nhấn dấu cách/xuống dòng). Bạn cũng có thể
+                <strong>chạm/nhấp vào bất kỳ từ nào</strong> trên màn hình để nghe lại cách đọc từ đó.
+              </p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">⚠️</div>
+            <div class="guide-item-body">
+              <h4>4. Lưu ý bộ gõ Tiếng Việt</h4>
+              <p>Nên chuyển bộ gõ sang <strong>tiếng Anh (ENG)</strong> bằng phím tắt <kbd>Ctrl</kbd> + <kbd>Shift</kbd>
+                hoặc <kbd>Alt</kbd> + <kbd>Z</kbd> để tránh bị dính dấu tiếng Việt khi luyện viết.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Luyện Nói -->
+      <div class="guide-tab-pane" id="guide-pane-speaking" style="display: none;">
+        <div class="guide-card-grid">
+          <div class="guide-item-card">
+            <div class="guide-item-icon">👂</div>
+            <div class="guide-item-body">
+              <h4>1. Nghe phát âm mẫu từ bản xứ</h4>
+              <p>Chọn giọng đọc <strong>👩 Nữ</strong> hoặc <strong>👨 Nam</strong> và chỉnh tốc độ (<strong>1.0x, 0.8x,
+                  0.6x</strong>) rồi bấm <strong>"🔊 Nghe mẫu"</strong> để làm quen với ngữ điệu trước khi nói.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🎙️</div>
+            <div class="guide-item-body">
+              <h4>2. Thu âm & AI Chấm điểm</h4>
+              <p>Bấm nút <strong>"Bấm để nói (Record)"</strong>, cấp quyền micro và đọc to đoạn văn. Hệ thống sẽ hiển
+                thị sóng âm trực tiếp và AI sẽ tự động phân tích, chấm điểm (%) cùng chỉ ra các từ đọc đúng/sai.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🗣️</div>
+            <div class="guide-item-body">
+              <h4>3. Chế độ Thu âm tự do (Free Speech)</h4>
+              <p>Chuyển sang tab <em>"Thu âm tự do"</em> để ghi âm các bài thuyết trình, độc thoại, podcast tiếng Anh
+                không giới hạn.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">💾</div>
+            <div class="guide-item-body">
+              <h4>4. Nghe lại & Tải file ghi âm</h4>
+              <p>Sau khi thu âm, bạn có thể nghe lại bản ghi của mình và tải về máy dưới các định dạng chuẩn:
+                <strong>MP3</strong>, <strong>WAV (chất lượng cao)</strong> hoặc <strong>WEBM</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Nạp & Quản Lý Bài Học -->
+      <div class="guide-tab-pane" id="guide-pane-manage" style="display: none;">
+        <div class="guide-card-grid">
+          <div class="guide-item-card">
+            <div class="guide-item-icon">📥</div>
+            <div class="guide-item-body">
+              <h4>1. Nạp thêm bài học mới</h4>
+              <p>Bấm nút <strong>"📥 Nạp bài mới"</strong> ở góc trên bên phải, nhập tiêu đề và dán đoạn văn tiếng Anh
+                cần luyện tập. Bạn có thể chọn <em>Giữ nguyên xuống dòng</em> hoặc <em>Nối thành 1 đoạn liền mạch</em>.
+              </p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">📚</div>
+            <div class="guide-item-body">
+              <h4>2. Danh sách bài đã lưu</h4>
+              <p>Bấm nút <strong>"📚 Danh sách bài"</strong> để xem lại toàn bộ bài viết/bài nói đã nạp, số lượng từ,
+                chuyển nhanh bài để luyện hoặc xóa các bài không còn dùng.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🔄</div>
+            <div class="guide-item-body">
+              <h4>3. Dùng chung dữ liệu Viết & Nói</h4>
+              <p>Mọi bài học bạn nạp đều được tự động lưu vĩnh viễn trên trình duyệt và sẵn sàng sử dụng cho cả
+                <strong>Luyện Viết</strong> lẫn <strong>Luyện Nói</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Đồng Bộ Sang Điện Thoại / Máy Khác -->
+      <div class="guide-tab-pane" id="guide-pane-sync" style="display: none;">
+        <div class="guide-card-grid">
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🔑</div>
+            <div class="guide-item-body">
+              <h4>1. Đồng bộ bằng Mã PIN 6 chữ số (Khuyên dùng)</h4>
+              <p>Trên máy gửi: Bấm <strong>"🔄 Mã đồng bộ"</strong> và xem mã 6 số (ví dụ:
+                <code>849 201</code>).<br />Trên điện thoại / máy nhận: Mở web, bấm <strong>"🔄 Mã đồng bộ"</strong> ➡️
+                Chọn tab <strong>"Nhập mã"</strong> và gõ mã 6 số đó để nạp bài ngay!
+              </p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">📷</div>
+            <div class="guide-item-body">
+              <h4>2. Quét mã QR</h4>
+              <p>Mở camera điện thoại quét mã QR trong hộp thoại đồng bộ để mở trang web có sẵn toàn bộ bài học đã nạp.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Tiện Ích & Phím Tắt -->
+      <div class="guide-tab-pane" id="guide-pane-shortcuts" style="display: none;">
+        <div class="guide-card-grid">
+          <div class="guide-item-card">
+            <div class="guide-item-icon">⌨️</div>
+            <div class="guide-item-body">
+              <h4>Phím tắt hữu ích</h4>
+              <p>• <kbd>Tab</kbd> + <kbd>Enter</kbd>: Bắt đầu làm lại bài hiện tại ngay lập tức.<br />
+                • <kbd>Enter</kbd>: Xuống dòng khi gặp ký tự ↵.<br />
+                • <kbd>Backspace</kbd>: Xóa lùi ký tự vừa gõ sai.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🎨</div>
+            <div class="guide-item-body">
+              <h4>Đổi giao diện (Themes)</h4>
+              <p>Bấm nút <strong>🎨 Theme</strong> ở góc trên để chuyển đổi giữa 4 giao diện cao cấp: <strong>Light
+                  (Sáng)</strong>, <strong>Dark (Tối)</strong>, <strong>Cyberpunk (Hiện đại)</strong>, và <strong>Forest
+                  (Rừng xanh dịu mắt)</strong>.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🔥</div>
+            <div class="guide-item-body">
+              <h4>Chuỗi ngày luyện tập (Streak)</h4>
+              <p>Mỗi ngày vào luyện tập ít nhất một bài để tăng chuỗi ngày liên tiếp (Streak 🔥), giúp bạn duy trì động
+                lực học tiếng Anh đều đặn!</p>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="modal-actions" style="margin-top: 1.25rem;">
-        <button class="btn-action" id="btn-sync-modal-close">Đóng</button>
+        <button class="btn-action btn-primary btn-block" id="btn-guide-close">👍 Đã hiểu, bắt đầu luyện tập
+          ngay!</button>
       </div>
     </div>
   </div>
