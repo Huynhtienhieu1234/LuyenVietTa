@@ -46,9 +46,12 @@ class TypingApp {
     this.isRecording = false;
     this.mediaRecorder = null;
     this.audioChunks = [];
-    this.speechRecognition = null;
     this.lastSpokenTranscript = '';
     this.recordedAudioUrl = null;
+
+    // Manage Texts Pagination State (Mặc định 5 bài)
+    this.managePageSize = 5; // 5 | 10 | 20 | 'all'
+    this.manageCurrentPage = 1;
 
     // DOM Elements
     this.dom = {
@@ -696,14 +699,30 @@ class TypingApp {
       return;
     }
 
-    container.innerHTML = list.map((item, idx) => {
+    const total = list.length;
+    const isAll = this.managePageSize === 'all' || this.managePageSize >= total;
+    const pageSize = isAll ? total : parseInt(this.managePageSize, 10);
+    const totalPages = isAll ? 1 : Math.ceil(total / pageSize);
+
+    if (this.manageCurrentPage > totalPages) {
+      this.manageCurrentPage = Math.max(1, totalPages);
+    }
+    if (this.manageCurrentPage < 1) {
+      this.manageCurrentPage = 1;
+    }
+
+    const startIndex = (this.manageCurrentPage - 1) * pageSize;
+    const displayList = list.slice(startIndex, startIndex + pageSize);
+
+    const cardsHtml = displayList.map((item, idx) => {
+      const realIndex = startIndex + idx + 1;
       const isCurrent = activeItem && activeItem.id === item.id;
       const wordCount = item.text.trim().split(/\s+/).length;
       return `
         <div class="saved-text-card ${isCurrent ? 'is-current' : ''}">
           <div class="saved-text-meta">
             <div class="saved-text-title">
-              <span>${idx + 1}. ${item.title}</span>
+              <span>${realIndex}. ${item.title}</span>
               ${isCurrent ? '<span class="badge badge-level" style="font-size: 0.65rem;">Đang chọn</span>' : ''}
             </div>
             <div class="saved-text-preview">
@@ -722,6 +741,27 @@ class TypingApp {
       `;
     }).join('');
 
+    const paginationHtml = `
+      <div class="manage-pagination-bar">
+        <div class="manage-page-limit-selector">
+          <span class="limit-label">Số bài hiển thị:</span>
+          <select class="manage-limit-select" id="manage-limit-select" title="Chọn số lượng bài hiển thị">
+            <option value="5" ${this.managePageSize == 5 ? 'selected' : ''}>5 bài (Mặc định)</option>
+            <option value="10" ${this.managePageSize == 10 ? 'selected' : ''}>10 bài</option>
+            <option value="20" ${this.managePageSize == 20 ? 'selected' : ''}>20 bài</option>
+            <option value="all" ${this.managePageSize === 'all' ? 'selected' : ''}>Tất cả (${total} bài)</option>
+          </select>
+        </div>
+        <div class="manage-page-controls">
+          <button type="button" class="btn-page-nav" id="btn-manage-prev-page" ${this.manageCurrentPage <= 1 ? 'disabled' : ''} title="Trang trước">◀ Trước</button>
+          <span class="manage-page-indicator">Trang <strong>${this.manageCurrentPage}</strong> / ${totalPages} (${total} bài)</span>
+          <button type="button" class="btn-page-nav" id="btn-manage-next-page" ${this.manageCurrentPage >= totalPages ? 'disabled' : ''} title="Trang tiếp">Sau ▶</button>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = cardsHtml + paginationHtml;
+
     // Bind item buttons
     container.querySelectorAll('.btn-select-saved-item').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -737,6 +777,36 @@ class TypingApp {
         this.deleteCustomText(id);
       });
     });
+
+    // Bind pagination controls
+    const limitSelect = container.querySelector('#manage-limit-select');
+    if (limitSelect) {
+      limitSelect.addEventListener('change', (e) => {
+        this.managePageSize = e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10);
+        this.manageCurrentPage = 1;
+        this.renderManageTextsList();
+      });
+    }
+
+    const btnPrev = container.querySelector('#btn-manage-prev-page');
+    if (btnPrev) {
+      btnPrev.addEventListener('click', () => {
+        if (this.manageCurrentPage > 1) {
+          this.manageCurrentPage--;
+          this.renderManageTextsList();
+        }
+      });
+    }
+
+    const btnNext = container.querySelector('#btn-manage-next-page');
+    if (btnNext) {
+      btnNext.addEventListener('click', () => {
+        if (this.manageCurrentPage < totalPages) {
+          this.manageCurrentPage++;
+          this.renderManageTextsList();
+        }
+      });
+    }
   }
 
   selectTextById(id) {

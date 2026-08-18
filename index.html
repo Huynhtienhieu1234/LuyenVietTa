@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description"
     content="Trang web luyện viết và gõ tiếng Anh tương tác theo đoạn văn mẫu thời gian thực, hỗ trợ giọng đọc nam/nữ, tra nghĩa và thống kê WPM chi tiết.">
-  <title>Luyện Viết Tiếng Anh - English Writing & Typing Practice</title>
+  <title>Luyện Tiếng Anh - English Writing & English Speaking Practice</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="speaking.css">
   <link rel="stylesheet" href="notification.css">
@@ -98,7 +98,7 @@
               <span class="menu-item-icon">🔄</span>
               <span class="menu-item-info">
                 <span class="menu-item-title">Mã đồng bộ thiết bị</span>
-                <span class="menu-item-desc">Mã PIN 6 số, mã QR</span>
+                <span class="menu-item-desc">Mã PIN 6 số tiện lợi</span>
               </span>
             </button>
           </div>
@@ -285,9 +285,6 @@
           </button>
         </div>
 
-        <div class="footer-hint" style="font-size: 0.8rem; color: var(--text-muted);">
-          Mẹo: Nhấn phím <code>Tab</code> + <code>Enter</code> để nhanh chóng bắt đầu lại
-        </div>
       </div>
     </section>
 
@@ -581,7 +578,8 @@
         style="text-align: left; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
         <div>
           <h2 class="result-title" id="manage-modal-title" style="font-size: 1.3rem;">📚 Danh sách bài viết đã nạp</h2>
-          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bài bên dưới để bắt đầu luyện hoặc quản lý danh sách:</p>
+          <p class="result-subtitle" id="manage-modal-subtitle">Chọn bài bên dưới để bắt đầu luyện hoặc quản lý danh
+            sách:</p>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
           <button type="button" class="btn-action btn-danger-outline" id="btn-delete-all-custom"
@@ -612,7 +610,8 @@
               thanh trên cùng.</li>
           </ul>
         </div>
-        <button type="button" class="manage-info-close-btn" id="btn-close-manage-tips" title="Đóng thông báo mẹo">✕</button>
+        <button type="button" class="manage-info-close-btn" id="btn-close-manage-tips"
+          title="Đóng thông báo mẹo">✕</button>
       </div>
 
       <div class="saved-texts-list-container" id="saved-texts-list-container">
@@ -656,32 +655,6 @@
             💡 <strong>Rất đơn giản:</strong> Mở web trên thiết bị khác ➡️ Bấm <em>"🔄 Mã đồng bộ"</em> ➡️ Chọn
             tab <strong>"Nhập mã"</strong> và gõ mã 6 số này là có bài ngay!
           </div>
-        </div>
-
-        <!-- Optional QR Quick Scan / Raw Code -->
-        <div class="qr-quick-section"
-          style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed var(--bg-card-border);">
-          <details style="cursor: pointer;">
-            <summary style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">
-              📱 Tùy chọn khác: Quét mã QR bằng Camera hoặc sao chép mã nén
-            </summary>
-            <div style="margin-top: 0.75rem;">
-              <div class="qr-sync-card">
-                <div class="qr-code-wrapper">
-                  <div id="sync-qr-code"></div>
-                </div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">Mở camera điện thoại quét mã
-                  này để nhận bài.</p>
-              </div>
-              <textarea id="sync-code-output" class="custom-textarea" readonly
-                style="min-height: 55px; font-family: var(--font-mono); font-size: 0.72rem; word-break: break-all; margin-top: 0.35rem; background: var(--bg-tertiary);"
-                placeholder="Đang tạo mã nén..."></textarea>
-              <button type="button" class="btn-action btn-sm btn-block" id="btn-copy-sync-code"
-                style="margin-top: 0.35rem; font-size: 0.8rem;">
-                📋 Sao chép đoạn mã nén này
-              </button>
-            </div>
-          </details>
         </div>
       </div>
 
@@ -926,7 +899,6 @@
 
   <!-- Zero-Config Sync & Audio Encoding Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
   <script src="notification.js"></script>
   <script src="app.js"></script>
