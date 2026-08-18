@@ -84,6 +84,8 @@ class TypingApp {
       // Meta & Text Info
       passageLevel: document.getElementById('passage-level'),
       passageTitle: document.getElementById('passage-title'),
+      passageWordCount: document.getElementById('passage-word-count'),
+      passageWordCountBadge: document.getElementById('passage-word-count-badge'),
       btnDeleteCurrentCustom: document.getElementById('btn-delete-current-custom'),
 
       // Voice
@@ -1829,6 +1831,14 @@ class TypingApp {
     this.filteredTexts = [...this.savedCustomTexts];
   }
 
+  countWords(text) {
+    if (!text || typeof text !== 'string') return 0;
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+    const words = trimmed.match(/\S+/g);
+    return words ? words.length : 0;
+  }
+
   loadPassage(index) {
     this.stopSpeech();
     this.resetState();
@@ -1837,6 +1847,8 @@ class TypingApp {
       this.currentPassage = null;
       if (this.dom.passageLevel) this.dom.passageLevel.textContent = 'Trống';
       if (this.dom.passageTitle) this.dom.passageTitle.textContent = 'Chưa có bài viết nào';
+      if (this.dom.passageWordCount) this.dom.passageWordCount.textContent = '0';
+      if (this.dom.passageWordCountBadge) this.dom.passageWordCountBadge.title = 'Chưa có bài viết nào';
       if (this.dom.btnDeleteCurrentCustom) {
         this.dom.btnDeleteCurrentCustom.style.display = 'none';
       }
@@ -1881,6 +1893,17 @@ class TypingApp {
     this.dom.customCaret.style.display = 'block';
     this.renderTextDisplay(this.currentPassage.text);
     this.updateProgressBar();
+
+    // Update word count for the passage
+    const wordCount = this.countWords(this.currentPassage.text);
+    const charCount = this.currentPassage.text.length;
+    if (this.dom.passageWordCount) {
+      this.dom.passageWordCount.textContent = wordCount;
+    }
+    if (this.dom.passageWordCountBadge) {
+      this.dom.passageWordCountBadge.title = `Đoạn văn gồm ${wordCount} từ (${charCount} ký tự)`;
+    }
+
     this.updateSpeakingStage();
     this.focusInput();
   }
