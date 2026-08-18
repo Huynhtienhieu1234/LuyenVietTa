@@ -363,8 +363,9 @@ body {
 .menu-dropdown-list {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
   width: 268px;
+  max-width: calc(100vw - 24px);
   background: var(--bg-card);
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-lg);
@@ -2569,6 +2570,93 @@ body {
   padding: 2.5rem 1rem !important;
   font-style: italic;
   font-size: 0.88rem;
+}
+
+/* ===================================================================
+   Mobile & Responsive Adaptations (Tối Ưu Hóa Giao Diện Điện Thoại)
+=================================================================== */
+@media (max-width: 768px) {
+  .header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+
+  .menu-dropdown-wrapper {
+    position: relative;
+  }
+
+  .menu-dropdown-list {
+    left: 0 !important;
+    right: auto !important;
+    width: 275px;
+    max-width: calc(100vw - 20px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .theme-palette-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+  }
+
+  .theme-choice-btn {
+    padding: 0.45rem 0.15rem;
+    min-width: 0;
+  }
+
+  .theme-choice-name {
+    font-size: 0.7rem;
+  }
+
+  .stage-tools,
+  .speaking-tools-toolbar {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .voice-selector-wrapper,
+  .font-size-selector-wrapper {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  .voice-select,
+  .font-size-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .speaking-two-column-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-dialog {
+    max-width: calc(100vw - 1.5rem);
+    margin: 0.75rem;
+    padding: 1.25rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-choice-btn {
+    padding: 0.4rem 0.1rem;
+  }
+
+  .theme-swatch {
+    width: 16px;
+    height: 16px;
+  }
+
+  .theme-choice-name {
+    font-size: 0.65rem;
+  }
+
+  .menu-dropdown-list {
+    width: calc(100vw - 24px);
+    left: 0 !important;
+    right: auto !important;
+  }
 }
 
 
