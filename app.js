@@ -2,6 +2,10 @@
 // English Writing & Typing Practice Engine (Tối ưu hóa Luyện Viết)
 // ===================================================================
 
+// Cấu hình Google Sheets Web App URL để ghi nhận nhật ký người truy cập (Excel)
+// Dán link Web App (https://script.google.com/macros/s/.../exec) vào đây:
+const GOOGLE_SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzxkSPYjt3sPfDuPwauUXi_z9XmmL2-w9UtHkZTvth5NH9M6qZ9-Nb644hr6w12xMj8/exec';
+
 class TypingApp {
   constructor() {
     this.currentCategory = 'all';
@@ -244,6 +248,104 @@ class TypingApp {
     this.renderHistory();
     this.bindEvents();
     this.loadPassage(0);
+    this.trackVisitorAccess();
+  }
+
+  // =================================================================
+  // VISITOR ANALYTICS & GOOGLE SHEETS LOGGER (EXCEL LOG)
+  // =================================================================
+  async trackVisitorAccess() {
+    const webAppUrl = (typeof GOOGLE_SHEETS_WEBAPP_URL !== 'undefined' && GOOGLE_SHEETS_WEBAPP_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')
+      ? GOOGLE_SHEETS_WEBAPP_URL
+      : (localStorage.getItem('eng_sheet_tracking_url') || '');
+
+    if (!webAppUrl || webAppUrl === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+      return;
+    }
+
+    // Không spam nhiều dòng trong cùng 1 phiên làm việc
+    if (sessionStorage.getItem('eng_visit_logged_session')) {
+      return;
+    }
+
+    try {
+      // 1. Detect Device & OS
+      const ua = navigator.userAgent || '';
+      let device = 'Máy tính';
+      if (/iPhone/i.test(ua)) device = '📱 iPhone (iOS)';
+      else if (/iPad/i.test(ua)) device = '📱 iPad (iPadOS)';
+      else if (/Android/i.test(ua)) device = '📱 Điện thoại (Android)';
+      else if (/Macintosh|Mac OS X/i.test(ua)) device = '💻 Mac (macOS)';
+      else if (/Windows NT 10.0/i.test(ua)) device = '💻 Windows 10/11';
+      else if (/Windows/i.test(ua)) device = '💻 Windows PC';
+      else if (/Linux/i.test(ua)) device = '💻 Linux PC';
+
+      // 2. Detect Browser
+      let browser = 'Khác';
+      if (/CocCoc/i.test(ua)) browser = '🟢 Cốc Cốc';
+      else if (/Edg/i.test(ua)) browser = '🔵 Microsoft Edge';
+      else if (/Chrome/i.test(ua)) browser = '🔴 Google Chrome';
+      else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = '🧭 Apple Safari';
+      else if (/Firefox/i.test(ua)) browser = '🦊 Mozilla Firefox';
+      else if (/Opera|OPR/i.test(ua)) browser = '🔴 Opera';
+
+      // 3. Referrer
+      let referrer = document.referrer ? document.referrer : 'Trực tiếp / Bookmark';
+      if (referrer.includes('facebook.com') || referrer.includes('fb.com')) referrer = '📘 Facebook';
+      else if (referrer.includes('zalo.me')) referrer = '💬 Zalo';
+      else if (referrer.includes('google.com')) referrer = '🔍 Google Search';
+      else if (referrer.includes('github.io')) referrer = '🐙 GitHub Pages';
+
+      // 4. Screen resolution
+      const screen = `${window.screen.width}x${window.screen.height} (${window.innerWidth}x${window.innerHeight})`;
+
+      // 5. Fetch IP and Location (City, Country)
+      let ip = 'Ẩn';
+      let city = 'Không xác định';
+      let country = 'Việt Nam';
+
+      try {
+        const ipRes = await fetch('https://ipapi.co/json/');
+        if (ipRes.ok) {
+          const ipData = await ipRes.json();
+          ip = ipData.ip || ip;
+          city = ipData.city || city;
+          country = ipData.country_name || country;
+        }
+      } catch (err) {
+        try {
+          const fbRes = await fetch('https://api.ipify.org?format=json');
+          if (fbRes.ok) {
+            const fbData = await fbRes.json();
+            ip = fbData.ip || ip;
+          }
+        } catch (e) {}
+      }
+
+      const payload = {
+        ip: ip,
+        city: city,
+        country: country,
+        device: device,
+        browser: browser,
+        referrer: referrer,
+        screen: screen
+      };
+
+      // Gửi ngầm không chặn trang web
+      await fetch(webAppUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      sessionStorage.setItem('eng_visit_logged_session', 'true');
+    } catch (e) {
+      console.warn('Lỗi ghi nhận người truy cập:', e);
+    }
   }
 
   // =================================================================
