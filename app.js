@@ -70,6 +70,8 @@ class TypingApp {
       typingDisplay: document.getElementById('typing-display'),
       hiddenInput: document.getElementById('hidden-input'),
       customCaret: document.getElementById('custom-caret'),
+      caretHandle: document.getElementById('caret-handle'),
+      caretDragPreview: document.getElementById('caret-drag-preview'),
       focusOverlay: document.getElementById('focus-overlay'),
       stageCard: document.getElementById('stage-card'),
       progressBarFill: document.getElementById('progress-bar-fill'),
@@ -111,14 +113,6 @@ class TypingApp {
       btnMenuTrigger: document.getElementById('btn-menu-trigger'),
       menuDropdownWrapper: document.getElementById('menu-dropdown-wrapper'),
       menuDropdownList: document.getElementById('menu-dropdown-list'),
-
-      // Mobile Cursor Toolbar
-      btnCursorStart: document.getElementById('btn-cursor-start'),
-      btnCursorPrevWord: document.getElementById('btn-cursor-prev-word'),
-      btnCursorLeft: document.getElementById('btn-cursor-left'),
-      btnCursorRight: document.getElementById('btn-cursor-right'),
-      btnCursorNextWord: document.getElementById('btn-cursor-next-word'),
-      btnCursorEnd: document.getElementById('btn-cursor-end'),
 
       // Speaking Workspace Elements
       speakingStageCard: document.getElementById('speaking-stage-card'),
@@ -2015,13 +2009,97 @@ class TypingApp {
     this.jumpToCharIndex(Math.min(this.charElements.length, idx));
   }
 
+  getCharIndexFromCoords(clientX, clientY) {
+    if (!this.charElements || !this.charElements.length) return 0;
+
+    // 1. Direct hit on a char span
+    const el = document.elementFromPoint(clientX, clientY);
+    if (el) {
+      const charSpan = el.closest('.char-item');
+      if (charSpan && charSpan.dataset.index !== undefined) {
+        return parseInt(charSpan.dataset.index, 10);
+      }
+    }
+
+    // 2. Find nearest char in the matching line
+    let closestIdx = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < this.charElements.length; i++) {
+      const rect = this.charElements[i].getBoundingClientRect();
+      if (clientY >= rect.top - 20 && clientY <= rect.bottom + 20) {
+        const cx = rect.left + rect.width / 2;
+        const dist = Math.abs(clientX - cx);
+        if (dist < minDist) {
+          minDist = dist;
+          closestIdx = i;
+        }
+      }
+    }
+    if (minDist !== Infinity) return closestIdx;
+
+    // 3. Fallback: 2D Euclidean distance
+    for (let i = 0; i < this.charElements.length; i++) {
+      const rect = this.charElements[i].getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dist = Math.hypot(clientX - cx, clientY - cy);
+      if (dist < minDist) {
+        minDist = dist;
+        closestIdx = i;
+      }
+    }
+    return closestIdx;
+  }
+
   setupTouchCursor() {
-    if (!this.dom.typingContainer) return;
-    
-    let touchStartTime = 0;
+    if (!this.dom.typingContainer || !this.dom.customCaret) return;
+
+    let isDragging = false;
     let touchStartX = 0;
     let touchStartY = 0;
+    let touchStartTime = 0;
 
+    const startDrag = (clientX, clientY) => {
+      isDragging = true;
+      this.dom.customCaret.classList.add('is-dragging');
+      this.updateDragPreview(this.currentIndexInText);
+    };
+
+    const moveDrag = (clientX, clientY) => {
+      if (!isDragging) return;
+      const targetIdx = this.getCharIndexFromCoords(clientX, clientY);
+      if (targetIdx !== this.currentIndexInText) {
+        this.currentIndexInText = targetIdx;
+        this.updateCaretPosition();
+        this.updateDragPreview(targetIdx);
+      }
+    };
+
+    const endDrag = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      this.dom.customCaret.classList.remove('is-dragging');
+      this.updateProgressBar();
+      this.updateLiveStats();
+      const clickedWord = this.getWordAtCharIndex(this.currentIndexInText < this.charElements.length ? this.currentIndexInText : this.currentIndexInText - 1);
+      if (clickedWord) {
+        this.speakWord(clickedWord);
+      }
+      this.focusInput();
+    };
+
+    // 1. Touch events on the Caret Drag Handle (Tay cầm kéo giọt nước)
+    if (this.dom.caretHandle) {
+      this.dom.caretHandle.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          e.stopPropagation();
+          e.preventDefault();
+          startDrag(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: false });
+    }
+
+    // 2. Touch / Slide anywhere inside Typing Container
     this.dom.typingContainer.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
         touchStartTime = Date.now();
@@ -2030,24 +2108,51 @@ class TypingApp {
       }
     }, { passive: true });
 
-    this.dom.typingContainer.addEventListener('touchend', (e) => {
-      if (e.changedTouches.length === 1) {
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        const dist = Math.hypot(t.clientX - touchStartX, t.clientY - touchStartY);
+        if (isDragging) {
+          e.preventDefault();
+          moveDrag(t.clientX, t.clientY);
+        } else if (dist > 18 && (Date.now() - touchStartTime) > 120) {
+          // Detect finger slide across typing text
+          const rect = this.dom.typingContainer.getBoundingClientRect();
+          if (t.clientX >= rect.left - 20 && t.clientX <= rect.right + 20 &&
+              t.clientY >= rect.top - 20 && t.clientY <= rect.bottom + 20) {
+            startDrag(t.clientX, t.clientY);
+            moveDrag(t.clientX, t.clientY);
+          }
+        }
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+      if (isDragging) {
+        endDrag();
+      } else if (e.changedTouches.length === 1) {
         const touch = e.changedTouches[0];
         const dist = Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY);
         const duration = Date.now() - touchStartTime;
 
-        // If tap (not a scroll gesture)
-        if (dist < 15 && duration < 450) {
-          const el = document.elementFromPoint(touch.clientX, touch.clientY);
-          const charSpan = el ? el.closest('.char-item') : null;
-          if (charSpan && charSpan.dataset.index !== undefined) {
-            e.preventDefault();
-            const idx = parseInt(charSpan.dataset.index, 10);
-            this.jumpToCharIndex(idx);
-          }
+        // Quick Tap (nhấp ngón tay)
+        if (dist < 15 && duration < 400) {
+          const idx = this.getCharIndexFromCoords(touch.clientX, touch.clientY);
+          this.jumpToCharIndex(idx);
         }
       }
     });
+
+    window.addEventListener('touchcancel', () => {
+      if (isDragging) endDrag();
+    });
+  }
+
+  updateDragPreview(index) {
+    if (!this.dom.caretDragPreview) return;
+    const word = this.getWordAtCharIndex(index < this.charElements.length ? index : index - 1);
+    const char = this.currentPassage && index < this.currentPassage.text.length ? this.currentPassage.text[index] : '';
+    this.dom.caretDragPreview.innerHTML = word ? `🔎 <strong>${word}</strong>` : (char ? `<strong>${char}</strong>` : '✍️');
   }
 
   updateProgressBar() {
@@ -2917,30 +3022,6 @@ class TypingApp {
     }
     if (this.dom.btnNext) {
       this.dom.btnNext.addEventListener('click', () => this.loadPassage(this.currentIndex + 1));
-    }
-
-    // Mobile Cursor Toolbar Events
-    if (this.dom.btnCursorStart) {
-      this.dom.btnCursorStart.addEventListener('click', () => this.jumpToCharIndex(0));
-    }
-    if (this.dom.btnCursorPrevWord) {
-      this.dom.btnCursorPrevWord.addEventListener('click', () => this.jumpPreviousWord());
-    }
-    if (this.dom.btnCursorLeft) {
-      this.dom.btnCursorLeft.addEventListener('click', () => {
-        if (this.currentIndexInText > 0) this.jumpToCharIndex(this.currentIndexInText - 1);
-      });
-    }
-    if (this.dom.btnCursorRight) {
-      this.dom.btnCursorRight.addEventListener('click', () => {
-        if (this.currentIndexInText < this.charElements.length) this.jumpToCharIndex(this.currentIndexInText + 1);
-      });
-    }
-    if (this.dom.btnCursorNextWord) {
-      this.dom.btnCursorNextWord.addEventListener('click', () => this.jumpNextWord());
-    }
-    if (this.dom.btnCursorEnd) {
-      this.dom.btnCursorEnd.addEventListener('click', () => this.jumpToCharIndex(this.charElements.length));
     }
 
     // Setup touch gestures on typing container
