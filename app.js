@@ -184,6 +184,8 @@ class TypingApp {
       customTextInput: document.getElementById('custom-text-input'),
       btnCustomCancel: document.getElementById('btn-custom-cancel'),
       btnCustomApply: document.getElementById('btn-custom-apply'),
+      fileUploadInput: document.getElementById('app-file-upload-input'),
+      btnModalUploadFile: document.getElementById('btn-modal-upload-file'),
 
       // History
       historyTbody: document.getElementById('history-tbody'),
@@ -1289,10 +1291,28 @@ class TypingApp {
   updateSpeakingStage() {
     if (!this.currentSpeakingPassage) {
       this.dom.speakingTargetText.innerHTML = `
-        <div class="empty-saved-box">
-          <p><strong>Bạn chưa nạp bài luyện nói nào.</strong></p>
+        <div class="empty-saved-box" id="empty-speaking-box">
+          <div class="icon">🎙️</div>
+          <h3 class="empty-title">Bạn chưa nạp bài luyện nói nào</h3>
+          <p class="empty-desc">
+            Bấm vào đây để <strong>nạp bài nói mới</strong> và bắt đầu luyện phát âm
+          </p>
+          <button type="button" class="btn-action btn-primary" id="btn-empty-speaking-modal">
+            🎙️ Nạp bài luyện nói mới
+          </button>
         </div>
       `;
+      this.dom.speakingResultPanel.style.display = 'none';
+      this.dom.recordedAudioBox.style.display = 'none';
+      this.dom.recorderStatus.textContent = 'Hãy nạp bài luyện nói trước khi bắt đầu thu âm phát âm.';
+
+      const emptySpeakingBox = this.dom.speakingTargetText.querySelector('#empty-speaking-box');
+      if (emptySpeakingBox) {
+        emptySpeakingBox.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openCustomModal();
+        });
+      }
       return;
     }
 
@@ -1863,6 +1883,137 @@ class TypingApp {
     }
   }
 
+  triggerFileUpload() {
+    if (this.dom.fileUploadInput) {
+      this.dom.fileUploadInput.value = '';
+      this.dom.fileUploadInput.click();
+    }
+  }
+
+  handleFileUpload(file) {
+    if (!file) return;
+    const fileName = file.name;
+    const ext = fileName.split('.').pop().toLowerCase();
+    const allowedExtensions = ['txt', 'json', 'md', 'csv', 'rtf', 'doc', 'docx', 'pdf'];
+
+    if (!allowedExtensions.includes(ext)) {
+      Notify.warning('Hỗ trợ các định dạng file: .txt, .json, .md, .csv, .rtf, .docx');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    if (ext === 'json') {
+      reader.onload = (e) => {
+        try {
+          const content = e.target.result;
+          // Try sync format first
+          const imported = this.importFromCompactString(content, false);
+          if (imported) return;
+
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed)) {
+            let count = 0;
+            parsed.forEach(item => {
+              if (item && (item.text || item.content)) {
+                const text = item.text || item.content;
+                const title = item.title || item.name || `Bài học ${this.savedCustomTexts.length + 1}`;
+                const customItem = {
+                  id: 'upload_' + Date.now() + Math.random().toString(36).substr(2, 4),
+                  category: 'custom',
+                  title: title,
+                  topic: 'Bài của tôi',
+                  level: 'Viết ngang',
+                  formatMode: 'inline',
+                  text: text.trim()
+                };
+                this.savedCustomTexts.unshift(customItem);
+                this.savedSpeakingTexts.unshift(customItem);
+                count++;
+              }
+            });
+            if (count > 0) {
+              localStorage.setItem('eng_write_custom_texts', JSON.stringify(this.savedCustomTexts));
+              localStorage.setItem('eng_speak_custom_texts', JSON.stringify(this.savedSpeakingTexts));
+              this.updateCustomTextsCount();
+              this.populateSavedTextsDropdown();
+              this.renderManageTextsList();
+              this.loadFilterTexts();
+              this.loadPassage(0);
+              Notify.success(`🎉 Đã nạp thành công ${count} bài học từ file JSON!`);
+              return;
+            }
+          } else if (parsed && (parsed.text || parsed.content)) {
+            const text = (parsed.text || parsed.content).trim();
+            const title = parsed.title || fileName.replace(/\.[^/.]+$/, "");
+            const customItem = {
+              id: 'upload_' + Date.now() + Math.random().toString(36).substr(2, 4),
+              category: 'custom',
+              title: title,
+              topic: 'Bài của tôi',
+              level: 'Viết ngang',
+              formatMode: 'inline',
+              text: text
+            };
+            this.saveCustomText(customItem, true);
+            Notify.success(`🎉 Đã nạp thành công bài: "${title}"!`);
+            return;
+          }
+          Notify.error('Không tìm thấy nội dung bài học hợp lệ trong file JSON.');
+        } catch (err) {
+          Notify.error('Lỗi khi đọc file JSON: ' + err.message);
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      // Text, Markdown, CSV, RTF, etc.
+      reader.onload = (e) => {
+        try {
+          let text = e.target.result || '';
+          if (ext === 'rtf') {
+            text = text.replace(/\\([a-z]{1,32})(-?\d{1,10})?[ ]?|[\{\}]|\\\n/gi, ' ').trim();
+          }
+          text = text.trim();
+          if (!text) {
+            Notify.warning('File này không có nội dung văn bản để luyện tập.');
+            return;
+          }
+
+          const rawTitle = fileName.replace(/\.[^/.]+$/, "");
+          const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+
+          // If modal is currently open, just auto-fill the modal inputs
+          if (this.dom.customTextModal && this.dom.customTextModal.classList.contains('active')) {
+            if (this.dom.customTitleInput) this.dom.customTitleInput.value = title;
+            if (this.dom.customTextInput) this.dom.customTextInput.value = text;
+            Notify.success(`📂 Đã tải nội dung file "${fileName}" vào khung nạp bài!`);
+            return;
+          }
+
+          const hasMultipleLines = text.includes('\n');
+          const customItem = {
+            id: (this.currentMode === 'speaking' ? 'speak_' : 'write_') + Date.now() + Math.random().toString(36).substr(2, 4),
+            category: 'custom',
+            title: title,
+            topic: 'Bài của tôi',
+            level: hasMultipleLines ? 'Giữ dòng' : 'Viết ngang',
+            formatMode: hasMultipleLines ? 'preserve' : 'inline',
+            text: text
+          };
+
+          this.saveCustomText(customItem, true);
+          Notify.success(`🎉 Đã nạp thành công bài học từ file "${fileName}"!`);
+        } catch (err) {
+          Notify.error('Không thể đọc file: ' + err.message);
+        }
+      };
+      reader.onerror = () => {
+        Notify.error('Lỗi khi đọc file từ máy tính.');
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+  }
+
   loadPassage(index) {
     this.stopSpeech();
     this.resetState();
@@ -1878,14 +2029,31 @@ class TypingApp {
       if (this.dom.selectSavedTexts) {
         this.dom.selectSavedTexts.value = '';
       }
+      if (this.dom.focusOverlay) {
+        this.dom.focusOverlay.classList.add('hidden');
+      }
       this.dom.typingDisplay.innerHTML = `
-        <div class="empty-saved-box" style="padding: 2.5rem 1rem;">
+        <div class="empty-saved-box" id="empty-typing-box">
           <div class="icon">📥</div>
-          <p><strong>Bạn chưa nạp bài viết nào để luyện tập.</strong></p>
-          <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.4rem;">Hãy bấm nút <strong>"📥 Nạp bài viết mới"</strong> ở góc trên bên phải để dán đoạn văn tiếng Anh của bạn vào nhé!</p>
+          <h3 class="empty-title">Bạn chưa nạp bài viết nào để luyện tập</h3>
+          <p class="empty-desc">
+            Bấm vào đây để <strong>nạp bài viết mới</strong> và bắt đầu luyện tập gõ phím
+          </p>
+          <button type="button" class="btn-action btn-primary" id="btn-empty-open-modal">
+            📥 Nạp bài viết mới
+          </button>
         </div>
       `;
       this.dom.customCaret.style.display = 'none';
+
+      // Bind click on empty card & button to open modal
+      const emptyBox = this.dom.typingDisplay.querySelector('#empty-typing-box');
+      if (emptyBox) {
+        emptyBox.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openCustomModal();
+        });
+      }
       return;
     }
 
@@ -2739,6 +2907,10 @@ class TypingApp {
   // Event Bindings
   // =================================================================
   focusInput() {
+    if (this.filteredTexts.length === 0) {
+      this.openCustomModal();
+      return;
+    }
     this.dom.stageCard.classList.add('is-focused');
     this.dom.focusOverlay.classList.add('hidden');
     if (this.dom.hiddenInput) {
@@ -2827,8 +2999,60 @@ class TypingApp {
 
   bindEvents() {
     // Focus bindings
-    this.dom.typingContainer.addEventListener('click', () => this.focusInput());
-    this.dom.focusOverlay.addEventListener('click', () => this.focusInput());
+    this.dom.typingContainer.addEventListener('click', () => {
+      if (this.filteredTexts.length === 0) {
+        this.openCustomModal();
+      } else {
+        this.focusInput();
+      }
+    });
+
+    this.dom.focusOverlay.addEventListener('click', () => {
+      if (this.filteredTexts.length === 0) {
+        this.openCustomModal();
+      } else {
+        this.focusInput();
+      }
+    });
+
+    // File upload change listener
+    if (this.dom.fileUploadInput) {
+      this.dom.fileUploadInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          this.handleFileUpload(e.target.files[0]);
+        }
+      });
+    }
+
+    if (this.dom.btnModalUploadFile) {
+      this.dom.btnModalUploadFile.addEventListener('click', () => {
+        this.triggerFileUpload();
+      });
+    }
+
+    // Drag and drop file support on typing container
+    if (this.dom.typingContainer) {
+      this.dom.typingContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.dom.typingContainer.classList.add('is-drag-active');
+      });
+
+      this.dom.typingContainer.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.dom.typingContainer.classList.remove('is-drag-active');
+      });
+
+      this.dom.typingContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.dom.typingContainer.classList.remove('is-drag-active');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          this.handleFileUpload(e.dataTransfer.files[0]);
+        }
+      });
+    }
 
     // Utility Navbar Menu Dropdown
     if (this.dom.btnMenuTrigger && this.dom.menuDropdownWrapper) {

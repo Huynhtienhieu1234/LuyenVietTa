@@ -801,6 +801,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--bg-card-border);
@@ -810,6 +811,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  flex-shrink: 0;
 }
 
 .badge {
@@ -833,12 +835,15 @@ body {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .stage-tools {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .btn-tool {
@@ -1151,6 +1156,94 @@ body {
 
 .translation-text strong {
   color: var(--text-main);
+}
+
+/* ===================================================================
+   Empty State Workspace (Bấm vào để nạp bài mới)
+=================================================================== */
+.empty-saved-box,
+.empty-upload-card {
+  font-family: var(--font-ui) !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+  white-space: normal !important;
+  padding: 2rem 1.5rem !important;
+  margin: 0.5rem auto !important;
+  max-width: 480px !important;
+  background: var(--bg-card);
+  border: 1.5px dashed var(--accent-primary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  box-shadow: var(--shadow-subtle);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-saved-box:hover,
+.empty-upload-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+  background: var(--bg-card-hover);
+}
+
+.empty-saved-box .icon,
+.empty-upload-icon {
+  font-size: 2.25rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1 !important;
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.empty-saved-box:hover .icon,
+.empty-upload-card:hover .empty-upload-icon {
+  transform: scale(1.15);
+}
+
+.empty-saved-box .empty-title,
+.empty-upload-heading {
+  font-family: var(--font-ui) !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+  margin-bottom: 0.35rem !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+}
+
+.empty-saved-box .empty-desc,
+.empty-upload-subtext {
+  font-family: var(--font-ui) !important;
+  font-size: 0.92rem !important;
+  color: var(--text-muted) !important;
+  line-height: 1.5 !important;
+  margin-bottom: 1.25rem !important;
+  letter-spacing: normal !important;
+}
+
+.empty-saved-box .empty-desc strong,
+.empty-upload-subtext strong {
+  color: var(--accent-primary) !important;
+}
+
+.empty-saved-box .btn-action,
+.empty-upload-card .btn-action {
+  font-family: var(--font-ui) !important;
+  font-size: 0.92rem !important;
+  padding: 0.65rem 1.4rem !important;
+  border-radius: var(--radius-md) !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Bottom Action Bar */
