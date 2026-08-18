@@ -150,6 +150,9 @@
             </select>
           </div>
 
+          <button class="btn-tool" id="btn-toggle-virtual-kb" title="Bật/Tắt bàn phím ảo cảm ứng trên màn hình điện thoại">
+            📱 Bàn phím ảo
+          </button>
           <button class="btn-tool" id="btn-toggle-hint" title="Bật/Tắt hiển thị chữ mẫu gợi ý">
             👁️ Gợi ý: Bật
           </button>
@@ -189,8 +192,8 @@
       <!-- Typing Area Container -->
       <div class="typing-box-container" id="typing-container" tabindex="0">
         <!-- Hidden input for mobile keyboard and keystroke trapping -->
-        <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off"
-          spellcheck="false">
+        <input type="text" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="none"
+          spellcheck="false" inputmode="text" enterkeyhint="next">
 
         <!-- Smooth Caret Indicator -->
         <div class="custom-caret" id="custom-caret"></div>
@@ -203,6 +206,29 @@
         <!-- Overlay to prompt focus -->
         <div class="focus-overlay" id="focus-overlay">
           <span>👆 Bấm vào đây hoặc gõ phím bất kỳ để bắt đầu luyện viết</span>
+        </div>
+      </div>
+
+      <!-- Interactive On-Screen Virtual Keyboard for Mobile / Touch Devices -->
+      <div class="virtual-keyboard-wrapper" id="virtual-keyboard-container" style="display: none;">
+        <div class="virtual-keyboard-header">
+          <div class="vk-header-info">
+            <span class="vk-badge">📱 Bàn phím điện thoại cảm ứng</span>
+            <span class="vk-hint-next" id="vk-next-key-indicator">Phím tiếp theo: <strong id="vk-target-key-char">...</strong></span>
+          </div>
+          <div class="vk-header-actions">
+            <button type="button" class="vk-tool-btn" id="btn-vk-speak-cur" title="Đọc phát âm từ hiện tại">
+              🔊 Nghe từ
+            </button>
+            <button type="button" class="vk-tool-btn" id="btn-vk-hide" title="Thu gọn bàn phím ảo">
+              ✕ Thu gọn
+            </button>
+          </div>
+        </div>
+
+        <!-- Keyboard Key Matrix (Generated dynamically & interactive) -->
+        <div class="virtual-keyboard-board" id="virtual-keyboard-board">
+          <!-- Keys rendered via JS -->
         </div>
       </div>
 

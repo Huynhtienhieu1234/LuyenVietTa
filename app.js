@@ -41,6 +41,11 @@ class TypingApp {
     this.themeList = ['light', 'dark', 'cyberpunk', 'forest'];
     this.currentThemeIndex = 0;
 
+    // Mobile Virtual Keyboard State
+    this.isVirtualKeyboardVisible = false;
+    this.vkMode = 'letters'; // 'letters' | 'symbols'
+    this.vkShift = false;
+
     // Speaking State & Recorder
     this.currentMode = 'writing'; // 'writing' | 'speaking'
     this.isRecording = false;
@@ -87,6 +92,13 @@ class TypingApp {
       selectSavedTexts: document.getElementById('select-saved-texts'),
       btnOpenManageModal: document.getElementById('btn-open-manage-modal'),
       myTextsCount: document.getElementById('my-texts-count'),
+      btnToggleVirtualKb: document.getElementById('btn-toggle-virtual-kb'),
+      virtualKeyboardContainer: document.getElementById('virtual-keyboard-container'),
+      virtualKeyboardBoard: document.getElementById('virtual-keyboard-board'),
+      vkNextKeyIndicator: document.getElementById('vk-next-key-indicator'),
+      vkTargetKeyChar: document.getElementById('vk-target-key-char'),
+      btnVkSpeakCur: document.getElementById('btn-vk-speak-cur'),
+      btnVkHide: document.getElementById('btn-vk-hide'),
       btnToggleHint: document.getElementById('btn-toggle-hint'),
       btnSpeakAll: document.getElementById('btn-speak-all'),
       btnFontSizeInc: document.getElementById('btn-font-size-inc'),
@@ -1058,6 +1070,9 @@ class TypingApp {
       } else {
         this.loadPassage(0);
       }
+      if (this.isVirtualKeyboardVisible) {
+        this.renderVirtualKeyboard();
+      }
       this.focusInput();
     }
   }
@@ -1740,6 +1755,7 @@ class TypingApp {
     this.currentIndexInText = 0;
     this.applyHintState();
     this.updateCaretPosition();
+    this.updateVirtualKeyboardTargetKey();
   }
 
   updateProgressBar() {
@@ -1855,6 +1871,7 @@ class TypingApp {
     this.updateCaretPosition();
     this.updateProgressBar();
     this.updateLiveStats();
+    this.updateVirtualKeyboardTargetKey();
 
     // Auto Pronounce Word When Completed (on Space, Enter, or End of Passage)
     if (inputChar === ' ' || inputChar === '\n' || this.currentIndexInText >= this.charElements.length) {
@@ -1891,6 +1908,7 @@ class TypingApp {
     this.updateCaretPosition();
     this.updateProgressBar();
     this.updateLiveStats();
+    this.updateVirtualKeyboardTargetKey();
     this.playKeySound(false);
   }
 
@@ -1925,6 +1943,11 @@ class TypingApp {
       const containerRect = this.dom.typingContainer.getBoundingClientRect();
       this.dom.customCaret.style.left = `${rect.left - containerRect.left}px`;
       this.dom.customCaret.style.top = `${rect.top - containerRect.top + 4}px`;
+
+      // Keep caret in view on mobile devices
+      if (rect.bottom > window.innerHeight - 80 || rect.top < 80) {
+        currentSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
   }
 
@@ -1983,6 +2006,7 @@ class TypingApp {
     this.dom.statErrors.textContent = '0';
     this.dom.statTime.textContent = '00:00';
     if (this.dom.progressBarFill) this.dom.progressBarFill.style.width = '0%';
+    this.updateVirtualKeyboardTargetKey();
   }
 
   // =================================================================
@@ -1991,6 +2015,7 @@ class TypingApp {
   completeSession() {
     this.isFinished = true;
     if (this.timerInterval) clearInterval(this.timerInterval);
+    this.updateVirtualKeyboardTargetKey();
 
     const stats = this.calculateStats();
 
@@ -2112,6 +2137,257 @@ class TypingApp {
     if (this.dom.voiceGenderSelect) {
       this.dom.voiceGenderSelect.value = voiceGender;
     }
+
+    const vkPref = localStorage.getItem('eng_write_virtual_kb');
+    if (vkPref === 'true') {
+      this.toggleVirtualKeyboard(true);
+    }
+  }
+
+  // =================================================================
+  // Mobile & On-Screen Virtual Keyboard Engine (Bàn Phím Ảo Điện Thoại)
+  // =================================================================
+  toggleVirtualKeyboard(forceState = null) {
+    if (forceState !== null) {
+      this.isVirtualKeyboardVisible = forceState;
+    } else {
+      this.isVirtualKeyboardVisible = !this.isVirtualKeyboardVisible;
+    }
+
+    if (this.dom.virtualKeyboardContainer) {
+      this.dom.virtualKeyboardContainer.style.display = this.isVirtualKeyboardVisible ? 'block' : 'none';
+    }
+
+    if (this.dom.btnToggleVirtualKb) {
+      if (this.isVirtualKeyboardVisible) {
+        this.dom.btnToggleVirtualKb.classList.add('active');
+        this.dom.btnToggleVirtualKb.innerHTML = '📱 Ẩn bàn phím';
+      } else {
+        this.dom.btnToggleVirtualKb.classList.remove('active');
+        this.dom.btnToggleVirtualKb.innerHTML = '📱 Bàn phím ảo';
+      }
+    }
+
+    localStorage.setItem('eng_write_virtual_kb', this.isVirtualKeyboardVisible.toString());
+
+    if (this.isVirtualKeyboardVisible) {
+      this.renderVirtualKeyboard();
+      this.updateVirtualKeyboardTargetKey();
+      setTimeout(() => {
+        if (this.dom.virtualKeyboardContainer) {
+          this.dom.virtualKeyboardContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+    }
+  }
+
+  triggerHapticFeedback() {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(12);
+      } catch (e) {}
+    }
+  }
+
+  renderVirtualKeyboard() {
+    if (!this.dom.virtualKeyboardBoard) return;
+    const board = this.dom.virtualKeyboardBoard;
+    board.innerHTML = '';
+
+    let rows = [];
+
+    if (this.vkMode === 'symbols') {
+      rows = [
+        ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+        ['@', '#', '$', '%', '&', '*', '-', '+', '(', ')'],
+        ['!', '"', "'", ':', ';', '/', '?', ',', '.'],
+        [
+          { type: 'mode', label: 'ABC', key: 'MODE_ABC' },
+          { type: 'char', char: '_' },
+          { type: 'char', char: '/' },
+          { type: 'char', char: '\\' },
+          { type: 'char', char: '=' },
+          { type: 'backspace', label: '⌫ Xóa', key: 'BACKSPACE' }
+        ],
+        [
+          { type: 'space', label: 'Khoảng trắng (Space)', key: ' ' },
+          { type: 'enter', label: '↵ Xuống dòng', key: '\n' }
+        ]
+      ];
+    } else {
+      // Letters mode (QWERTY)
+      const r1 = ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'];
+      const r2 = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+      const r3Chars = ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.'];
+
+      const row1Keys = r1.map(ch => this.vkShift ? ch.toUpperCase() : ch);
+      const row2Keys = r2.map(ch => this.vkShift ? ch.toUpperCase() : ch);
+      const row3Keys = [
+        { type: 'shift', label: this.vkShift ? '⬆ IN HOA' : '⇧ Shift', key: 'SHIFT', active: this.vkShift },
+        ...r3Chars.map(ch => (this.vkShift && ch.length === 1 && /[a-z]/i.test(ch)) ? ch.toUpperCase() : ch),
+        { type: 'backspace', label: '⌫', key: 'BACKSPACE' }
+      ];
+      const row4Keys = [
+        { type: 'mode', label: '?123', key: 'MODE_123' },
+        { type: 'char', char: "'" },
+        { type: 'space', label: 'Khoảng trắng (Space)', key: ' ' },
+        { type: 'char', char: '-' },
+        { type: 'enter', label: '↵ Enter', key: '\n' }
+      ];
+
+      rows = [row1Keys, row2Keys, row3Keys, row4Keys];
+    }
+
+    rows.forEach(rowArr => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'vk-row';
+
+      rowArr.forEach(item => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'vk-key';
+
+        let keyVal = '';
+        let displayLabel = '';
+
+        if (typeof item === 'string') {
+          keyVal = item;
+          displayLabel = item;
+          btn.dataset.key = keyVal;
+        } else {
+          keyVal = item.key || item.char || '';
+          displayLabel = item.label || item.char || '';
+          btn.dataset.key = keyVal;
+
+          if (item.type === 'shift') {
+            btn.classList.add('vk-key-func', 'vk-key-shift');
+            if (item.active) btn.classList.add('active');
+          } else if (item.type === 'backspace') {
+            btn.classList.add('vk-key-func', 'vk-key-backspace');
+          } else if (item.type === 'mode') {
+            btn.classList.add('vk-key-func', 'vk-key-mode');
+          } else if (item.type === 'space') {
+            btn.classList.add('vk-key-space');
+          } else if (item.type === 'enter') {
+            btn.classList.add('vk-key-enter');
+          }
+        }
+
+        btn.textContent = displayLabel;
+
+        // Touch & Click event
+        const onActivate = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          btn.classList.add('is-pressed');
+          setTimeout(() => btn.classList.remove('is-pressed'), 120);
+          this.triggerHapticFeedback();
+          this.handleVirtualKeyPress(keyVal);
+        };
+
+        btn.addEventListener('touchstart', onActivate, { passive: false });
+        btn.addEventListener('mousedown', onActivate);
+
+        rowEl.appendChild(btn);
+      });
+
+      board.appendChild(rowEl);
+    });
+
+    this.updateVirtualKeyboardTargetKey();
+  }
+
+  handleVirtualKeyPress(keyVal) {
+    if (keyVal === 'SHIFT') {
+      this.vkShift = !this.vkShift;
+      this.renderVirtualKeyboard();
+      return;
+    }
+
+    if (keyVal === 'MODE_123') {
+      this.vkMode = 'symbols';
+      this.renderVirtualKeyboard();
+      return;
+    }
+
+    if (keyVal === 'MODE_ABC') {
+      this.vkMode = 'letters';
+      this.renderVirtualKeyboard();
+      return;
+    }
+
+    if (keyVal === 'BACKSPACE') {
+      this.handleBackspace();
+      return;
+    }
+
+    if (keyVal) {
+      this.handleCharacterInput(keyVal);
+      // Auto toggle off Shift after typing 1 uppercase character
+      if (this.vkShift) {
+        this.vkShift = false;
+        this.renderVirtualKeyboard();
+      }
+    }
+  }
+
+  updateVirtualKeyboardTargetKey() {
+    if (!this.dom.virtualKeyboardBoard) return;
+    
+    // Clear previous targets
+    this.dom.virtualKeyboardBoard.querySelectorAll('.vk-key.is-target').forEach(el => {
+      el.classList.remove('is-target');
+    });
+
+    if (!this.currentPassage || this.currentIndexInText >= this.charElements.length || this.isFinished) {
+      if (this.dom.vkTargetKeyChar) this.dom.vkTargetKeyChar.textContent = 'Hoàn thành 🎉';
+      return;
+    }
+
+    const nextChar = this.currentPassage.text[this.currentIndexInText];
+    let displayCharName = nextChar;
+    if (nextChar === ' ') displayCharName = 'Space (Khoảng trắng)';
+    else if (nextChar === '\n') displayCharName = 'Enter (Xuống dòng)';
+    
+    if (this.dom.vkTargetKeyChar) {
+      this.dom.vkTargetKeyChar.textContent = displayCharName;
+    }
+
+    if (!this.isVirtualKeyboardVisible) return;
+
+    // Highlight key in board
+    const keys = this.dom.virtualKeyboardBoard.querySelectorAll('.vk-key');
+    let matchedKey = null;
+
+    for (const keyEl of keys) {
+      const k = keyEl.dataset.key;
+      if (!k) continue;
+
+      if (k === nextChar) {
+        matchedKey = keyEl;
+        break;
+      }
+      if (nextChar === ' ' && (k === ' ' || keyEl.classList.contains('vk-key-space'))) {
+        matchedKey = keyEl;
+        break;
+      }
+      if (nextChar === '\n' && (k === '\n' || keyEl.classList.contains('vk-key-enter'))) {
+        matchedKey = keyEl;
+        break;
+      }
+      if (this.cleanCharForTyping(k) === this.cleanCharForTyping(nextChar)) {
+        matchedKey = keyEl;
+        break;
+      }
+      if (k.toLowerCase() === nextChar.toLowerCase()) {
+        matchedKey = keyEl;
+        break;
+      }
+    }
+
+    if (matchedKey) {
+      matchedKey.classList.add('is-target');
+    }
   }
 
   // =================================================================
@@ -2120,7 +2396,9 @@ class TypingApp {
   focusInput() {
     this.dom.stageCard.classList.add('is-focused');
     this.dom.focusOverlay.classList.add('hidden');
-    this.dom.hiddenInput.focus();
+    if (this.dom.hiddenInput) {
+      this.dom.hiddenInput.focus();
+    }
   }
 
   blurInput() {
@@ -2162,6 +2440,30 @@ class TypingApp {
     this.dom.typingContainer.addEventListener('click', () => this.focusInput());
     this.dom.focusOverlay.addEventListener('click', () => this.focusInput());
 
+    // Virtual Keyboard Toolbar Controls
+    if (this.dom.btnToggleVirtualKb) {
+      this.dom.btnToggleVirtualKb.addEventListener('click', () => {
+        this.toggleVirtualKeyboard();
+      });
+    }
+
+    if (this.dom.btnVkSpeakCur) {
+      this.dom.btnVkSpeakCur.addEventListener('click', () => {
+        const curWord = this.getWordAtCharIndex(this.currentIndexInText);
+        if (curWord) {
+          this.speakWord(curWord);
+        } else if (this.currentPassage) {
+          this.speakText(this.currentPassage.text);
+        }
+      });
+    }
+
+    if (this.dom.btnVkHide) {
+      this.dom.btnVkHide.addEventListener('click', () => {
+        this.toggleVirtualKeyboard(false);
+      });
+    }
+
     // Close IME Telex Alert
     if (this.dom.btnCloseImeAlert) {
       this.dom.btnCloseImeAlert.addEventListener('click', (e) => {
@@ -2175,7 +2477,7 @@ class TypingApp {
       if (e.data && this.isVietnameseChar(e.data)) {
         this.showImeAlert();
       }
-      if (e.data && !this.handledKeyInKeydown) {
+      if (e.data) {
         for (const char of e.data) {
           this.handleCharacterInput(char);
         }
@@ -2183,18 +2485,31 @@ class TypingApp {
       this.dom.hiddenInput.value = '';
     });
 
+    this.dom.hiddenInput.addEventListener('beforeinput', (e) => {
+      if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+        e.preventDefault();
+        this.handleCharacterInput('\n');
+        this.dom.hiddenInput.value = '';
+      }
+    });
+
     this.dom.hiddenInput.addEventListener('input', (e) => {
-      if (e.data && this.isVietnameseChar(e.data)) {
+      const data = e.data || this.dom.hiddenInput.value || '';
+      if (data && this.isVietnameseChar(data)) {
         this.showImeAlert();
       }
 
       // Mobile Soft Keyboard character handling
-      if (e.inputType === 'deleteContentBackward') {
+      if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') {
         if (!this.handledKeyInKeydown) this.handleBackspace();
       } else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
         if (!this.handledKeyInKeydown) this.handleCharacterInput('\n');
-      } else if (e.data && e.data.length === 1) {
-        if (!this.handledKeyInKeydown) this.handleCharacterInput(e.data);
+      } else if (data) {
+        if (!this.handledKeyInKeydown) {
+          for (const char of data) {
+            this.handleCharacterInput(char);
+          }
+        }
       }
       this.dom.hiddenInput.value = '';
     });
@@ -2204,11 +2519,19 @@ class TypingApp {
       // If modal or input is open, don't capture typing
       if (this.dom.resultModal.classList.contains('active') || 
           this.dom.customTextModal.classList.contains('active') ||
-          this.dom.manageTextsModal.classList.contains('active')) {
+          this.dom.manageTextsModal.classList.contains('active') ||
+          (this.dom.syncModal && this.dom.syncModal.classList.contains('active'))) {
         return;
       }
-      this.handledKeyInKeydown = true;
-      setTimeout(() => { this.handledKeyInKeydown = false; }, 20);
+
+      if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'Unidentified') {
+        this.handledKeyInKeydown = true;
+        setTimeout(() => { this.handledKeyInKeydown = false; }, 30);
+      } else if (e.key === 'Backspace' || e.key === 'Enter') {
+        this.handledKeyInKeydown = true;
+        setTimeout(() => { this.handledKeyInKeydown = false; }, 30);
+      }
+
       this.handleKeyDown(e);
     });
 
