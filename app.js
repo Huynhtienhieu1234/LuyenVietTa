@@ -84,7 +84,8 @@ class TypingApp {
       // Meta & Text Info
       passageLevel: document.getElementById('passage-level'),
       passageTitle: document.getElementById('passage-title'),
-      passageWordCount: document.getElementById('passage-word-count'),
+      passageTypedWords: document.getElementById('passage-typed-words'),
+      passageTotalWords: document.getElementById('passage-total-words'),
       passageWordCountBadge: document.getElementById('passage-word-count-badge'),
       btnDeleteCurrentCustom: document.getElementById('btn-delete-current-custom'),
 
@@ -1839,6 +1840,29 @@ class TypingApp {
     return words ? words.length : 0;
   }
 
+  getTypedWordCount() {
+    if (!this.currentPassage || !this.currentPassage.text || this.currentIndexInText <= 0) {
+      return 0;
+    }
+    const typedText = this.currentPassage.text.substring(0, this.currentIndexInText);
+    return this.countWords(typedText);
+  }
+
+  updateWordCountDisplay() {
+    const totalWords = this.currentPassage ? this.countWords(this.currentPassage.text) : 0;
+    const typedWords = this.getTypedWordCount();
+
+    if (this.dom.passageTotalWords) {
+      this.dom.passageTotalWords.textContent = totalWords;
+    }
+    if (this.dom.passageTypedWords) {
+      this.dom.passageTypedWords.textContent = typedWords;
+    }
+    if (this.dom.passageWordCountBadge) {
+      this.dom.passageWordCountBadge.title = `Đã nhập ${typedWords} / ${totalWords} từ (${this.currentPassage ? this.currentPassage.text.length : 0} ký tự)`;
+    }
+  }
+
   loadPassage(index) {
     this.stopSpeech();
     this.resetState();
@@ -1847,8 +1871,7 @@ class TypingApp {
       this.currentPassage = null;
       if (this.dom.passageLevel) this.dom.passageLevel.textContent = 'Trống';
       if (this.dom.passageTitle) this.dom.passageTitle.textContent = 'Chưa có bài viết nào';
-      if (this.dom.passageWordCount) this.dom.passageWordCount.textContent = '0';
-      if (this.dom.passageWordCountBadge) this.dom.passageWordCountBadge.title = 'Chưa có bài viết nào';
+      this.updateWordCountDisplay();
       if (this.dom.btnDeleteCurrentCustom) {
         this.dom.btnDeleteCurrentCustom.style.display = 'none';
       }
@@ -1893,17 +1916,7 @@ class TypingApp {
     this.dom.customCaret.style.display = 'block';
     this.renderTextDisplay(this.currentPassage.text);
     this.updateProgressBar();
-
-    // Update word count for the passage
-    const wordCount = this.countWords(this.currentPassage.text);
-    const charCount = this.currentPassage.text.length;
-    if (this.dom.passageWordCount) {
-      this.dom.passageWordCount.textContent = wordCount;
-    }
-    if (this.dom.passageWordCountBadge) {
-      this.dom.passageWordCountBadge.title = `Đoạn văn gồm ${wordCount} từ (${charCount} ký tự)`;
-    }
-
+    this.updateWordCountDisplay();
     this.updateSpeakingStage();
     this.focusInput();
   }
@@ -2477,6 +2490,7 @@ class TypingApp {
     this.dom.statWpm.textContent = stats.wpm;
     this.dom.statAcc.textContent = `${stats.accuracy}%`;
     this.dom.statErrors.textContent = stats.errorCount;
+    this.updateWordCountDisplay();
   }
 
   resetState() {
@@ -2496,6 +2510,7 @@ class TypingApp {
     this.dom.statErrors.textContent = '0';
     this.dom.statTime.textContent = '00:00';
     if (this.dom.progressBarFill) this.dom.progressBarFill.style.width = '0%';
+    this.updateWordCountDisplay();
   }
 
   // =================================================================
