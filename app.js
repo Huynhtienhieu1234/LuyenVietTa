@@ -1976,16 +1976,6 @@ class TypingApp {
     if (!this.charElements || !this.charElements.length) return;
     targetIndex = Math.max(0, Math.min(targetIndex, this.charElements.length));
 
-    // If moving backward: clean status from targetIndex up to previous currentIndexInText
-    if (targetIndex < this.currentIndexInText) {
-      for (let i = targetIndex; i < this.currentIndexInText; i++) {
-        if (this.charElements[i]) {
-          this.charElements[i].classList.remove('char-correct', 'char-error');
-        }
-        delete this.typedHistory[i];
-      }
-    }
-
     this.currentIndexInText = targetIndex;
     this.updateCaretPosition();
     this.updateProgressBar();
