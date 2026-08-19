@@ -2157,19 +2157,25 @@ class TypingApp {
 
   // Normalize quotes and spaces for seamless typing
   cleanCharForTyping(char) {
+    if (!char) return '';
     if (char === '’' || char === '‘' || char === '`') return "'";
     if (char === '“' || char === '”') return '"';
     if (char === '—' || char === '–') return '-';
+    if (char === '\u00a0' || char === '\t') return ' ';
     return char;
   }
 
   renderTextDisplay(text) {
     this.dom.typingDisplay.innerHTML = '';
     this.charElements = [];
+    if (!text) return;
+
+    // Chuẩn hóa văn bản: đổi CRLF -> LF, khoảng trắng đặc biệt & tab
+    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\u00a0/g, ' ');
 
     // Split text into span elements, preserving newlines & paragraphs
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
+    for (let i = 0; i < normalizedText.length; i++) {
+      const char = normalizedText[i];
       const span = document.createElement('span');
       span.dataset.index = i;
 
@@ -2541,7 +2547,8 @@ class TypingApp {
       return;
     }
 
-    if (e.key.startsWith('F')) {
+    // Bỏ qua các phím chức năng F1 - F24 (không chặn chữ F in hoa)
+    if (/^F\d+$/.test(e.key)) {
       return;
     }
 
@@ -2650,7 +2657,7 @@ class TypingApp {
     }
 
     // Auto-advance newline if current target is newline and user typed something else or space
-    if (this.currentPassage.text[this.currentIndexInText] === '\n') {
+    while (this.currentIndexInText < this.charElements.length && this.currentPassage.text[this.currentIndexInText] === '\n') {
       const nlSpan = this.charElements[this.currentIndexInText];
       if (nlSpan) {
         nlSpan.classList.remove('char-error');
