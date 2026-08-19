@@ -18,6 +18,7 @@ class TypingApp {
     this.savedSpeakingTexts = []; // Dữ liệu Luyện Nói
     this.currentSpeakingPassage = null;
     this.currentSpeakingIndex = 0;
+    this.editingCustomTextId = null; // ID bài đang chỉnh sửa (nếu có)
 
     // Typing State
     this.charElements = [];
@@ -104,6 +105,7 @@ class TypingApp {
 
       // Controls & Submitted Texts
       selectSavedTexts: document.getElementById('select-saved-texts'),
+      btnEditCurrentText: document.getElementById('btn-edit-current-text'),
       btnOpenManageModal: document.getElementById('btn-open-manage-modal'),
       myTextsCount: document.getElementById('my-texts-count'),
       btnToggleAutoSpeak: document.getElementById('btn-toggle-auto-speak'),
@@ -248,7 +250,81 @@ class TypingApp {
     this.renderHistory();
     this.bindEvents();
     this.loadPassage(0);
+    this.initVisitorCounter();
     this.trackVisitorAccess();
+  }
+
+  // =================================================================
+  // VISITOR ANALYTICS & SMART SESSION COUNTER (KHÔNG TÍNH KHI LOAD LẠI TRANG)
+  // =================================================================
+  initVisitorCounter() {
+    const todayKey = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    const storedDate = localStorage.getItem('eng_visit_last_date') || todayKey;
+    let todayCount = parseInt(localStorage.getItem('eng_visit_today_count') || '1', 10);
+    let totalCount = parseInt(localStorage.getItem('eng_visit_total_count') || '12', 10);
+
+    // Nếu sang ngày mới -> reset số lượt của hôm nay
+    if (storedDate !== todayKey) {
+      todayCount = 1;
+      localStorage.setItem('eng_visit_last_date', todayKey);
+      localStorage.setItem('eng_visit_today_count', '1');
+    }
+
+    // Kiểm tra xem đã có phiên làm việc trong tab này chưa
+    const isNewSession = !sessionStorage.getItem('eng_visit_session_active');
+
+    if (isNewSession) {
+      // Đánh dấu phiên làm việc đã được tính lượt
+      sessionStorage.setItem('eng_visit_session_active', 'true');
+      
+      // Chỉ tăng khi mở phiên mới, KHÔNG tăng khi người dùng F5 / reload lại trang
+      todayCount += 1;
+      totalCount += 1;
+      localStorage.setItem('eng_visit_today_count', todayCount.toString());
+      localStorage.setItem('eng_visit_total_count', totalCount.toString());
+
+      // Đồng bộ ngầm lên hệ thống
+      this.syncGlobalVisitorCount(true);
+    } else {
+      // Khi tải lại trang (F5 / Reload): Giữ nguyên số đếm
+      this.syncGlobalVisitorCount(false);
+    }
+
+    this.renderVisitorBadge(todayCount, totalCount);
+  }
+
+  async syncGlobalVisitorCount(isNewSession) {
+    try {
+      const pageUrl = window.location.origin + window.location.pathname;
+      const res = await fetch('https://events.vercount.one/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: pageUrl })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.site_pv || data.page_pv || data.site_uv)) {
+          const serverTotal = Math.max(data.site_pv || 0, data.site_uv || 0);
+          let currentTotal = parseInt(localStorage.getItem('eng_visit_total_count') || '12', 10);
+          if (serverTotal > currentTotal) {
+            currentTotal = serverTotal;
+            localStorage.setItem('eng_visit_total_count', currentTotal.toString());
+          }
+          let currentToday = parseInt(localStorage.getItem('eng_visit_today_count') || '1', 10);
+          this.renderVisitorBadge(currentToday, currentTotal);
+        }
+      }
+    } catch (err) {
+      // Fallback cục bộ
+    }
+  }
+
+  renderVisitorBadge(today, total) {
+    const todayEl = document.getElementById('val-today-visitors');
+    const totalEl = document.getElementById('val-total-visitors');
+    if (todayEl) todayEl.textContent = today;
+    if (totalEl) totalEl.textContent = total;
   }
 
   // =================================================================
@@ -856,6 +932,9 @@ class TypingApp {
             <button class="btn-action btn-primary btn-select-saved-item" data-id="${item.id}" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
               ${isSpeak ? '🎙️ Luyện bài này' : '✍️ Luyện bài này'}
             </button>
+            <button class="btn-tool btn-edit-saved-item" data-id="${item.id}" style="color: var(--accent-primary); width: 32px; height: 32px;" title="Chỉnh sửa bài này">
+              ✏️
+            </button>
             <button class="btn-tool btn-delete-saved-item" data-id="${item.id}" style="color: var(--danger-color); width: 32px; height: 32px;" title="Xóa bài này">
               🗑️
             </button>
@@ -891,6 +970,17 @@ class TypingApp {
         const id = e.currentTarget.dataset.id;
         this.selectTextById(id);
         this.dom.manageTextsModal.classList.remove('active');
+      });
+    });
+
+    container.querySelectorAll('.btn-edit-saved-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        const targetItem = list.find(t => t.id === id);
+        if (targetItem) {
+          this.dom.manageTextsModal.classList.remove('active');
+          this.openEditCustomModal(targetItem);
+        }
       });
     });
 
@@ -3026,14 +3116,17 @@ class TypingApp {
   }
 
   openCustomModal() {
+    this.editingCustomTextId = null;
     const isSpeak = this.currentMode === 'speaking';
     const titleEl = document.getElementById('custom-modal-title');
     const subEl = document.getElementById('custom-modal-subtitle');
     const inputLabel = document.querySelector('label[for="custom-text-input"]');
+    const btnApply = document.getElementById('btn-custom-apply');
 
     if (titleEl) titleEl.textContent = isSpeak ? '📥 Nạp dữ liệu luyện nói tiếng Anh' : '📥 Nạp dữ liệu luyện viết tiếng Anh';
     if (subEl) subEl.textContent = isSpeak ? 'Dán bài văn, hội thoại cần luyện nói (giữ nguyên định dạng xuống dòng & tự động lưu):' : 'Dán bài viết cần luyện gõ (giữ nguyên định dạng xuống dòng & tự động lưu):';
     if (inputLabel) inputLabel.textContent = isSpeak ? 'Nội dung bài luyện nói tiếng Anh:' : 'Nội dung bài luyện viết tiếng Anh:';
+    if (btnApply) btnApply.textContent = '🚀 Bắt đầu luyện tập ngay';
 
     if (this.dom.customTitleInput) this.dom.customTitleInput.value = '';
     if (this.dom.customTextInput) this.dom.customTextInput.value = '';
@@ -3051,6 +3144,55 @@ class TypingApp {
     }
     setTimeout(() => {
       if (this.dom.customTitleInput) this.dom.customTitleInput.focus();
+    }, 100);
+  }
+
+  openEditCustomModal(item) {
+    if (!item) {
+      Notify.warning('Không tìm thấy bài học để điều chỉnh.');
+      return;
+    }
+
+    this.editingCustomTextId = item.id;
+    const isSpeak = this.currentMode === 'speaking';
+    const titleEl = document.getElementById('custom-modal-title');
+    const subEl = document.getElementById('custom-modal-subtitle');
+    const inputLabel = document.querySelector('label[for="custom-text-input"]');
+    const btnApply = document.getElementById('btn-custom-apply');
+
+    if (titleEl) titleEl.textContent = isSpeak ? '✏️ Điều chỉnh bài luyện nói' : '✏️ Điều chỉnh bài luyện viết';
+    if (subEl) subEl.textContent = 'Thay đổi tiêu đề, nội dung bài hoặc định dạng dòng khi luyện tập:';
+    if (inputLabel) inputLabel.textContent = isSpeak ? 'Nội dung bài luyện nói tiếng Anh:' : 'Nội dung bài luyện viết tiếng Anh:';
+    if (btnApply) btnApply.textContent = '💾 Lưu thay đổi';
+
+    if (this.dom.customTitleInput) this.dom.customTitleInput.value = item.title || '';
+    if (this.dom.customTextInput) this.dom.customTextInput.value = item.text || '';
+
+    // Set format mode according to item
+    const isPreserve = item.formatMode === 'preserve' || item.level === 'Giữ dòng' || (item.text && item.text.includes('\n'));
+    const radInline = document.getElementById('rad-format-inline');
+    const radPreserve = document.getElementById('rad-format-preserve');
+    const lblInline = document.getElementById('lbl-format-inline');
+    const lblPreserve = document.getElementById('lbl-format-preserve');
+
+    if (isPreserve) {
+      if (radPreserve) radPreserve.checked = true;
+      if (lblPreserve) lblPreserve.classList.add('active');
+      if (lblInline) lblInline.classList.remove('active');
+    } else {
+      if (radInline) radInline.checked = true;
+      if (lblInline) lblInline.classList.add('active');
+      if (lblPreserve) lblPreserve.classList.remove('active');
+    }
+
+    if (this.dom.customTextModal) {
+      this.dom.customTextModal.classList.add('active');
+    }
+    setTimeout(() => {
+      if (this.dom.customTextInput) {
+        this.dom.customTextInput.focus();
+        this.dom.customTextInput.select();
+      }
     }, 100);
   }
 
@@ -3552,8 +3694,36 @@ class TypingApp {
       });
     }
 
+    // Edit Currently Selected Custom Text Button
+    if (this.dom.btnEditCurrentText) {
+      this.dom.btnEditCurrentText.addEventListener('click', () => {
+        const isSpeak = this.currentMode === 'speaking';
+        const currentList = isSpeak ? this.savedSpeakingTexts : this.savedCustomTexts;
+        if (!currentList || currentList.length === 0) {
+          Notify.warning('Chưa có bài nào để điều chỉnh. Hãy nạp bài mới trước!');
+          return;
+        }
+
+        let selectedId = this.dom.selectSavedTexts ? this.dom.selectSavedTexts.value : '';
+        let targetItem = currentList.find(t => t.id === selectedId);
+        if (!targetItem) {
+          targetItem = isSpeak ? this.currentSpeakingPassage : this.currentPassage;
+        }
+        if (!targetItem) {
+          targetItem = currentList[0];
+        }
+
+        if (targetItem) {
+          this.openEditCustomModal(targetItem);
+        } else {
+          Notify.warning('Vui lòng chọn một bài đã nạp để điều chỉnh.');
+        }
+      });
+    }
+
     if (this.dom.btnCustomCancel) {
       this.dom.btnCustomCancel.addEventListener('click', () => {
+        this.editingCustomTextId = null;
         if (this.dom.customTextModal) this.dom.customTextModal.classList.remove('active');
       });
     }
@@ -3613,8 +3783,13 @@ class TypingApp {
           if (title.length < firstLine.length) title += '...';
         }
 
+        const isEditing = Boolean(this.editingCustomTextId);
+        const customId = isEditing
+          ? this.editingCustomTextId
+          : ((this.currentMode === 'speaking' ? 'speak_' : 'write_') + Date.now() + Math.random().toString(36).substr(2, 4));
+
         const customItem = {
-          id: (this.currentMode === 'speaking' ? 'speak_' : 'write_') + Date.now() + Math.random().toString(36).substr(2, 4),
+          id: customId,
           category: 'custom',
           title: title,
           topic: 'Bài của tôi',
@@ -3623,7 +3798,7 @@ class TypingApp {
           text: cleanText
         };
 
-        // 1. Đóng modal nạp bài ngay lập tức
+        // 1. Đóng modal nạp / sửa bài ngay lập tức
         if (this.dom.customTextModal) {
           this.dom.customTextModal.classList.remove('active');
         }
@@ -3631,15 +3806,22 @@ class TypingApp {
         // 2. Tự động lưu và cập nhật giao diện
         this.saveCustomText(customItem, true);
 
-        // 3. Xóa trắng form để lần sau mở ra sạch sẽ
+        // 3. Xóa trắng form & reset ID chỉnh sửa
+        this.editingCustomTextId = null;
         if (this.dom.customTitleInput) this.dom.customTitleInput.value = '';
         if (this.dom.customTextInput) this.dom.customTextInput.value = '';
 
         // 4. Hiển thị thông báo toast thành công
-        Notify.success(`🎉 Đã nạp thành công bài: "${title}" (${isPreserve ? 'Giữ dòng' : 'Viết ngang'})!`);
+        if (isEditing) {
+          Notify.success(`💾 Đã cập nhật thành công bài: "${title}"!`);
+        } else {
+          Notify.success(`🎉 Đã nạp thành công bài: "${title}" (${isPreserve ? 'Giữ dòng' : 'Viết ngang'})!`);
+        }
 
-        // 5. Tự động focus vào khung gõ phím
-        this.focusInput();
+        // 5. Tự động focus vào khung gõ phím nếu ở chế độ luyện viết
+        if (this.currentMode === 'writing') {
+          this.focusInput();
+        }
       });
     }
 

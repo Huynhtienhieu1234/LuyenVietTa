@@ -125,6 +125,9 @@
         <select id="select-saved-texts" class="custom-select-texts" title="Chọn bài viết đã nạp để luyện tập">
           <option value="" disabled selected>-- Chưa có bài viết --</option>
         </select>
+        <button class="pill-btn" id="btn-edit-current-text" title="Điều chỉnh / Sửa nội dung bài học đang chọn">
+          ✏️ Sửa bài
+        </button>
         <button class="pill-btn" id="btn-open-manage-modal" title="Xem và quản lý tất cả bài viết đã nạp">
           📚 Danh sách bài (<span id="my-texts-count">0</span>)
         </button>
@@ -522,13 +525,15 @@
       <div class="footer-credit-text">
         Ứng dụng Luyện Viết & Nói Tiếng Anh • Tác giả: <strong>KS.Huỳnh Tiến Hiểu</strong>
       </div>
-      <div class="footer-visitor-box">
+      <div class="footer-visitor-box" title="Thống kê lượt truy cập (Chỉ tính 1 lượt mỗi phiên, không tính khi load lại trang)">
         <span class="visitor-dot"></span>
         <span class="visitor-text">Lượt truy cập:</span>
-        <img class="visitor-hits-badge"
-          src="https://hits.sh/huynhtienhieu1234.github.io/LuyenVietTa.svg?view=today-total&style=flat-square&label=%C4%90ang%20xem&extra=%7C%20T%E1%BB%95ng&color=6366f1&labelColor=1e293b"
-          alt="Số lượt truy cập"
-          title="Thống kê số lượt người truy cập (Hôm nay | Tổng cộng)" />
+        <div class="visitor-badge-pills" id="visitor-badge-container">
+          <span class="visitor-pill-label">Đang xem</span>
+          <span class="visitor-pill-val" id="val-today-visitors">1</span>
+          <span class="visitor-pill-divider">/</span>
+          <span class="visitor-pill-val-total" id="val-total-visitors">12</span>
+        </div>
       </div>
     </footer>
 
