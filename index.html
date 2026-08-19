@@ -525,11 +525,25 @@
       <div class="footer-credit-text">
         Ứng dụng Luyện Viết & Nói Tiếng Anh • Tác giả: <strong>KS.Huỳnh Tiến Hiểu</strong>
       </div>
-      <div class="footer-visitor-box" title="Thống kê tổng lượt truy cập (Chỉ tính 1 lượt mỗi phiên, không tính khi load lại trang)">
-        <span class="visitor-dot"></span>
-        <span class="visitor-text">Lượt truy cập:</span>
-        <div class="visitor-badge-pills" id="visitor-badge-container">
-          <span class="visitor-pill-val" id="val-total-visitors">13</span>
+      <div class="footer-stats-group">
+        <!-- Live Online Users Box -->
+        <div class="footer-visitor-box footer-online-box" title="Số người đang mở trang web trực tiếp">
+          <span class="visitor-dot visitor-dot-online"></span>
+          <span class="visitor-text">Đang online:</span>
+          <div class="visitor-badge-pills">
+            <span class="visitor-pill-val visitor-pill-online" id="val-online-users">1</span>
+          </div>
+        </div>
+
+        <div class="footer-divider-dot">•</div>
+
+        <!-- Total Visits Box -->
+        <div class="footer-visitor-box" title="Tổng số lượt truy cập (Chỉ tính 1 lượt mỗi phiên, không tính khi load lại trang)">
+          <span class="visitor-dot"></span>
+          <span class="visitor-text">Lượt truy cập:</span>
+          <div class="visitor-badge-pills" id="visitor-badge-container">
+            <span class="visitor-pill-val" id="val-total-visitors">14</span>
+          </div>
         </div>
       </div>
     </footer>
@@ -937,6 +951,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
   <script src="notification.js?v=3.1"></script>
+  <script src="tracker.js?v=3.1"></script>
   <script src="app.js?v=3.1"></script>
 </body>
 

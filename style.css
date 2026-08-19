@@ -2993,6 +2993,21 @@ body {
   color: var(--text-main);
 }
 
+.footer-stats-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.footer-divider-dot {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  user-select: none;
+  opacity: 0.5;
+}
+
 .footer-visitor-box {
   display: inline-flex;
   align-items: center;
@@ -3020,6 +3035,11 @@ body {
   box-shadow: 0 0 8px var(--success-color);
   display: inline-block;
   animation: pulse-dot 2s infinite ease-in-out;
+}
+
+.visitor-dot-online {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
 }
 
 @keyframes pulse-dot {
@@ -3052,6 +3072,10 @@ body {
   color: #ffffff;
   padding: 3px 8px;
   letter-spacing: 0.03em;
+}
+
+.visitor-pill-online {
+  background: #10b981;
 }
 
 
