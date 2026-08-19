@@ -290,7 +290,7 @@ class TypingApp {
       this.syncGlobalVisitorCount(false);
     }
 
-    this.renderVisitorBadge(todayCount, totalCount);
+    this.renderVisitorBadge(totalCount);
   }
 
   async syncGlobalVisitorCount(isNewSession) {
@@ -306,13 +306,12 @@ class TypingApp {
         const data = await res.json();
         if (data && (data.site_pv || data.page_pv || data.site_uv)) {
           const serverTotal = Math.max(data.site_pv || 0, data.site_uv || 0);
-          let currentTotal = parseInt(localStorage.getItem('eng_visit_total_count') || '12', 10);
+          let currentTotal = parseInt(localStorage.getItem('eng_visit_total_count') || '13', 10);
           if (serverTotal > currentTotal) {
             currentTotal = serverTotal;
             localStorage.setItem('eng_visit_total_count', currentTotal.toString());
           }
-          let currentToday = parseInt(localStorage.getItem('eng_visit_today_count') || '1', 10);
-          this.renderVisitorBadge(currentToday, currentTotal);
+          this.renderVisitorBadge(currentTotal);
         }
       }
     } catch (err) {
@@ -320,10 +319,8 @@ class TypingApp {
     }
   }
 
-  renderVisitorBadge(today, total) {
-    const todayEl = document.getElementById('val-today-visitors');
+  renderVisitorBadge(total) {
     const totalEl = document.getElementById('val-total-visitors');
-    if (todayEl) todayEl.textContent = today;
     if (totalEl) totalEl.textContent = total;
   }
 
@@ -2411,11 +2408,139 @@ class TypingApp {
     this.jumpToCharIndex(Math.min(this.charElements.length, idx));
   }
 
+  jumpLineUp() {
+    if (!this.charElements || !this.charElements.length || this.currentIndexInText <= 0) return;
+    const curIdx = Math.min(this.currentIndexInText, this.charElements.length - 1);
+    const currentSpan = this.charElements[curIdx];
+    if (!currentSpan) return;
+    const currentRect = currentSpan.getBoundingClientRect();
+    const currentX = currentRect.left + (this.currentIndexInText >= this.charElements.length ? currentRect.width : 0);
+
+    // 1. Quét ngược để tìm dòng ngay phía trên
+    let prevLineIdx = -1;
+    let prevLineTop = null;
+    for (let i = curIdx - 1; i >= 0; i--) {
+      const r = this.charElements[i].getBoundingClientRect();
+      if (r.bottom <= currentRect.top + 6) {
+        prevLineTop = r.top;
+        prevLineIdx = i;
+        break;
+      }
+    }
+
+    if (prevLineTop === null) {
+      // Đang ở dòng đầu tiên -> về đầu bài
+      this.jumpToCharIndex(0);
+      return;
+    }
+
+    // 2. Tìm ký tự có tọa độ ngang X gần nhất trên dòng phía trên
+    let targetIdx = prevLineIdx;
+    let closestDist = Infinity;
+    for (let i = 0; i <= prevLineIdx; i++) {
+      const r = this.charElements[i].getBoundingClientRect();
+      if (Math.abs(r.top - prevLineTop) < 8) {
+        const charX = r.left + r.width / 2;
+        const dist = Math.abs(charX - currentX);
+        if (dist < closestDist) {
+          closestDist = dist;
+          targetIdx = i;
+        }
+      }
+    }
+
+    this.jumpToCharIndex(targetIdx);
+  }
+
+  jumpLineDown() {
+    if (!this.charElements || !this.charElements.length) return;
+    const maxAllowed = Math.max(0, Math.min(this.maxTypedIndex, this.charElements.length));
+    if (this.currentIndexInText >= maxAllowed) return;
+
+    const curIdx = Math.min(this.currentIndexInText, this.charElements.length - 1);
+    const currentSpan = this.charElements[curIdx];
+    if (!currentSpan) return;
+    const currentRect = currentSpan.getBoundingClientRect();
+    const currentX = currentRect.left + (this.currentIndexInText >= this.charElements.length ? currentRect.width : 0);
+
+    // 1. Quét xuôi để tìm ký tự đầu tiên của dòng kế tiếp (trong phạm vi đã gõ)
+    let nextLineTop = null;
+    let nextLineStartIdx = -1;
+    for (let i = curIdx + 1; i <= maxAllowed && i < this.charElements.length; i++) {
+      const r = this.charElements[i].getBoundingClientRect();
+      if (r.top >= currentRect.bottom - 6) {
+        nextLineTop = r.top;
+        nextLineStartIdx = i;
+        break;
+      }
+    }
+
+    if (nextLineTop === null) {
+      // Không còn dòng dưới trong phạm vi đã gõ -> nhảy đến vị trí gõ xa nhất
+      this.jumpToCharIndex(maxAllowed);
+      return;
+    }
+
+    // 2. Tìm ký tự có tọa độ ngang X gần nhất trên dòng kế tiếp
+    let targetIdx = nextLineStartIdx;
+    let closestDist = Infinity;
+    for (let i = nextLineStartIdx; i <= maxAllowed && i < this.charElements.length; i++) {
+      const r = this.charElements[i].getBoundingClientRect();
+      if (Math.abs(r.top - nextLineTop) < 8) {
+        const charX = r.left + r.width / 2;
+        const dist = Math.abs(charX - currentX);
+        if (dist < closestDist) {
+          closestDist = dist;
+          targetIdx = i;
+        }
+      } else {
+        break;
+      }
+    }
+
+    this.jumpToCharIndex(targetIdx);
+  }
+
+  jumpToLineStart() {
+    if (!this.charElements || !this.charElements.length || this.currentIndexInText <= 0) return;
+    const currentSpan = this.charElements[Math.min(this.currentIndexInText, this.charElements.length - 1)];
+    if (!currentSpan) return;
+    const currentTop = currentSpan.getBoundingClientRect().top;
+    let targetIdx = this.currentIndexInText;
+    for (let i = this.currentIndexInText - 1; i >= 0; i--) {
+      const r = this.charElements[i].getBoundingClientRect();
+      if (Math.abs(r.top - currentTop) < 8) {
+        targetIdx = i;
+      } else {
+        break;
+      }
+    }
+    this.jumpToCharIndex(targetIdx);
+  }
+
+  jumpToLineEnd() {
+    if (!this.charElements || !this.charElements.length) return;
+    const maxAllowed = Math.max(0, Math.min(this.maxTypedIndex, this.charElements.length));
+    const currentSpan = this.charElements[Math.min(this.currentIndexInText, this.charElements.length - 1)];
+    if (!currentSpan) return;
+    const currentTop = currentSpan.getBoundingClientRect().top;
+    let targetIdx = this.currentIndexInText;
+    for (let i = this.currentIndexInText + 1; i <= maxAllowed && i < this.charElements.length; i++) {
+      const r = this.charElements[i].getBoundingClientRect();
+      if (Math.abs(r.top - currentTop) < 8) {
+        targetIdx = i;
+      } else {
+        break;
+      }
+    }
+    this.jumpToCharIndex(targetIdx);
+  }
+
   getCharIndexFromCoords(clientX, clientY) {
     if (!this.charElements || !this.charElements.length) return 0;
     const maxAllowed = Math.max(0, Math.min(this.maxTypedIndex, this.charElements.length));
 
-    // 1. Direct hit on a char span
+    // 1. Nhấp trúng trực tiếp span ký tự
     const el = document.elementFromPoint(clientX, clientY);
     if (el) {
       const charSpan = el.closest('.char-item');
@@ -2425,14 +2550,14 @@ class TypingApp {
       }
     }
 
-    // 2. Find nearest char in the matching line among typed chars
-    let closestIdx = 0;
+    // 2. Tìm ký tự gần nhất theo dòng nằm ngang
+    let closestIdx = -1;
     let minDist = Infinity;
     const limit = Math.min(this.charElements.length, maxAllowed + 1);
 
     for (let i = 0; i < limit; i++) {
       const rect = this.charElements[i].getBoundingClientRect();
-      if (clientY >= rect.top - 20 && clientY <= rect.bottom + 20) {
+      if (clientY >= rect.top - 8 && clientY <= rect.bottom + 8) {
         const cx = rect.left + rect.width / 2;
         const dist = Math.abs(clientX - cx);
         if (dist < minDist) {
@@ -2441,9 +2566,9 @@ class TypingApp {
         }
       }
     }
-    if (minDist !== Infinity) return Math.min(closestIdx, maxAllowed);
+    if (closestIdx !== -1) return Math.min(closestIdx, maxAllowed);
 
-    // 3. Fallback: 2D Euclidean distance among typed chars
+    // 3. Fallback: khoảng cách 2D đến các từ đã gõ
     for (let i = 0; i < limit; i++) {
       const rect = this.charElements[i].getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
@@ -2454,7 +2579,7 @@ class TypingApp {
         closestIdx = i;
       }
     }
-    return Math.min(closestIdx, maxAllowed);
+    return Math.min(closestIdx >= 0 ? closestIdx : 0, maxAllowed);
   }
 
   setupTouchCursor() {
@@ -2574,7 +2699,22 @@ class TypingApp {
   // Typing Engine & Validation (Chuyên sâu Luyện Viết)
   // =================================================================
   handleKeyDown(e) {
-    if (e.ctrlKey || e.altKey || e.metaKey || e.key.startsWith('F')) {
+    // Shortcut: Ctrl + Arrow Keys (Nhảy từng từ)
+    if (e.ctrlKey || e.altKey || e.metaKey) {
+      if (e.ctrlKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        this.jumpPreviousWord();
+        return;
+      }
+      if (e.ctrlKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        this.jumpNextWord();
+        return;
+      }
+      return;
+    }
+
+    if (e.key.startsWith('F')) {
       return;
     }
 
@@ -2594,7 +2734,17 @@ class TypingApp {
       return;
     }
 
-    // Navigation Arrow Keys (Di chuyển con trỏ bằng phím mũi tên)
+    // Navigation Arrow Keys (Di chuyển con trỏ bằng phím mũi tên Lên / Xuống / Trái / Phải)
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.jumpLineUp();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.jumpLineDown();
+      return;
+    }
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
       if (this.currentIndexInText > 0) {
@@ -2604,19 +2754,20 @@ class TypingApp {
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      if (this.currentIndexInText < this.charElements.length) {
+      const maxAllowed = Math.max(0, Math.min(this.maxTypedIndex, this.charElements.length));
+      if (this.currentIndexInText < maxAllowed) {
         this.jumpToCharIndex(this.currentIndexInText + 1);
       }
       return;
     }
     if (e.key === 'Home') {
       e.preventDefault();
-      this.jumpToCharIndex(0);
+      this.jumpToLineStart();
       return;
     }
     if (e.key === 'End') {
       e.preventDefault();
-      this.jumpToCharIndex(this.charElements.length);
+      this.jumpToLineEnd();
       return;
     }
 
@@ -3242,21 +3393,23 @@ class TypingApp {
   }
 
   bindEvents() {
-    // Focus bindings
-    this.dom.typingContainer.addEventListener('click', () => {
+    // Focus & Click to position cursor bindings (Nhấp chuột vị trí bất kỳ trong từ đã gõ)
+    this.dom.typingContainer.addEventListener('click', (e) => {
       if (this.filteredTexts.length === 0) {
         this.openCustomModal();
-      } else {
-        this.focusInput();
+        return;
       }
+      const targetIdx = this.getCharIndexFromCoords(e.clientX, e.clientY);
+      this.jumpToCharIndex(targetIdx);
     });
 
-    this.dom.focusOverlay.addEventListener('click', () => {
+    this.dom.focusOverlay.addEventListener('click', (e) => {
       if (this.filteredTexts.length === 0) {
         this.openCustomModal();
-      } else {
-        this.focusInput();
+        return;
       }
+      const targetIdx = this.getCharIndexFromCoords(e.clientX, e.clientY);
+      this.jumpToCharIndex(targetIdx);
     });
 
     // File upload change listener

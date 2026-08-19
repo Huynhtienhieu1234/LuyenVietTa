@@ -3040,40 +3040,18 @@ body {
   border-radius: 4px;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.25;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   vertical-align: middle;
 }
 
-.visitor-pill-label {
-  background: #1e293b;
-  color: #f8fafc;
-  padding: 3px 7px;
-  font-size: 0.72rem;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
 .visitor-pill-val {
   background: #6366f1;
   color: #ffffff;
-  padding: 3px 4px 3px 6px;
-}
-
-.visitor-pill-divider {
-  background: #6366f1;
-  color: rgba(255, 255, 255, 0.6);
-  padding: 3px 1px;
-  font-weight: 400;
-}
-
-.visitor-pill-val-total {
-  background: #6366f1;
-  color: #ffffff;
-  padding: 3px 7px 3px 4px;
+  padding: 3px 8px;
+  letter-spacing: 0.03em;
 }
 
 
