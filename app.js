@@ -58,11 +58,21 @@ class TypingApp {
     this.historyPageSize = 5; // 5 | 10 | 20 | 'all'
     this.historyCurrentPage = 1;
 
+    // Language state ('en' | 'zh')
+    this.currentLanguage = localStorage.getItem('app_current_language') || 'en';
+
     // Furthest typed character boundary
     this.maxTypedIndex = 0;
 
     // DOM Elements
     this.dom = {
+      // Unified Language Switcher
+      btnLangToggle: document.getElementById('btn-lang-toggle'),
+      langFlagContainer: document.getElementById('lang-flag-container'),
+      langToggleText: document.getElementById('lang-toggle-text'),
+      logoTitle: document.querySelector('.logo-text h1'),
+      logoSubline: document.querySelector('.logo-subline span'),
+
       // Mode Tabs
       tabBtnWriting: document.getElementById('tab-btn-writing'),
       tabBtnSpeaking: document.getElementById('tab-btn-speaking'),
@@ -121,6 +131,11 @@ class TypingApp {
       btnMenuTrigger: document.getElementById('btn-menu-trigger'),
       menuDropdownWrapper: document.getElementById('menu-dropdown-wrapper'),
       menuDropdownList: document.getElementById('menu-dropdown-list'),
+      btnMenuAddText: document.getElementById('btn-menu-add-text'),
+      btnMenuManageTexts: document.getElementById('btn-menu-manage-texts'),
+      btnMenuDeleteCurrent: document.getElementById('btn-menu-delete-current'),
+      btnMenuDeleteAll: document.getElementById('btn-menu-delete-all'),
+      menuTextsCount: document.getElementById('menu-texts-count'),
 
       // Speaking Workspace Elements
       speakingStageCard: document.getElementById('speaking-stage-card'),
@@ -238,6 +253,8 @@ class TypingApp {
 
   init() {
     this.checkUrlSyncPayload();
+    this.applyLanguageUI();
+    this.updateVoiceSelectors();
     this.loadCustomTextsFromStorage();
     this.loadFilterTexts();
     this.loadSavedPreferences();
@@ -565,23 +582,38 @@ class TypingApp {
   }
 
   // =================================================================
-  // Custom Texts Storage & Management (Tách biệt Viết & Nói)
+  // Custom Texts Storage & Management (Tách biệt Viết & Nói, Hỗ trợ Anh & Trung)
   // =================================================================
-  loadCustomTextsFromStorage() {
-    // 1. Load Writing Texts
-    try {
-      const writeData = localStorage.getItem('eng_write_custom_texts');
-      this.savedCustomTexts = writeData ? JSON.parse(writeData) : [];
-    } catch (e) {
-      this.savedCustomTexts = [];
-    }
+  getStorageKeys() {
+    const isZh = this.currentLanguage === 'zh';
+    return {
+      writeTexts: isZh ? 'zh_write_custom_texts' : 'eng_write_custom_texts',
+      speakTexts: isZh ? 'zh_speak_custom_texts' : 'eng_speak_custom_texts'
+    };
+  }
 
-    // 2. Load Speaking Texts
-    try {
-      const speakData = localStorage.getItem('eng_speak_custom_texts');
-      this.savedSpeakingTexts = speakData ? JSON.parse(speakData) : [];
-    } catch (e) {
-      this.savedSpeakingTexts = [];
+  loadCustomTextsFromStorage() {
+    const keys = this.getStorageKeys();
+    if (this.currentLanguage === 'zh' && window.chineseEngine) {
+      const zhData = window.chineseEngine.loadTexts();
+      this.savedCustomTexts = zhData.writeTexts || [];
+      this.savedSpeakingTexts = zhData.speakTexts || [];
+    } else {
+      // 1. Load English Writing Texts
+      try {
+        const writeData = localStorage.getItem(keys.writeTexts);
+        this.savedCustomTexts = writeData ? JSON.parse(writeData) : [];
+      } catch (e) {
+        this.savedCustomTexts = [];
+      }
+
+      // 2. Load English Speaking Texts
+      try {
+        const speakData = localStorage.getItem(keys.speakTexts);
+        this.savedSpeakingTexts = speakData ? JSON.parse(speakData) : [];
+      } catch (e) {
+        this.savedSpeakingTexts = [];
+      }
     }
 
     if (this.savedSpeakingTexts.length > 0 && !this.currentSpeakingPassage) {
@@ -593,6 +625,7 @@ class TypingApp {
   }
 
   saveCustomText(customItem, persist = true) {
+    const keys = this.getStorageKeys();
     if (persist) {
       // 1. Lưu vào danh sách Luyện Viết
       const existingWritingIdx = this.savedCustomTexts.findIndex(t => t.id === customItem.id);
@@ -601,7 +634,7 @@ class TypingApp {
       } else {
         this.savedCustomTexts.unshift(customItem);
       }
-      localStorage.setItem('eng_write_custom_texts', JSON.stringify(this.savedCustomTexts));
+      localStorage.setItem(keys.writeTexts, JSON.stringify(this.savedCustomTexts));
 
       // 2. Lưu đồng thời vào danh sách Luyện Nói để dùng chung ngay lập tức
       const existingSpeakingIdx = this.savedSpeakingTexts.findIndex(t => t.id === customItem.id);
@@ -610,7 +643,7 @@ class TypingApp {
       } else {
         this.savedSpeakingTexts.unshift(customItem);
       }
-      localStorage.setItem('eng_speak_custom_texts', JSON.stringify(this.savedSpeakingTexts));
+      localStorage.setItem(keys.speakTexts, JSON.stringify(this.savedSpeakingTexts));
     }
 
     this.updateCustomTextsCount();
@@ -629,19 +662,25 @@ class TypingApp {
   }
 
   async deleteCustomText(id) {
+    const isSpeak = this.currentMode === 'speaking';
+    const list = isSpeak ? this.savedSpeakingTexts : this.savedCustomTexts;
+    const item = list.find(t => t.id === id) || this.savedCustomTexts.find(t => t.id === id) || this.savedSpeakingTexts.find(t => t.id === id);
+    const itemTitle = item && item.title ? `"${item.title}"` : 'phiên này';
+
     const ok = await Notify.confirm(
-      'Bạn có chắc muốn xóa bài này khỏi danh sách lưu trữ không?',
-      'Xác nhận xóa bài',
-      { isDanger: true, confirmText: '🗑️ Xóa bài', cancelText: 'Hủy' }
+      `Bạn có chắc chắn muốn xóa ${itemTitle} khỏi danh sách đã nạp không?`,
+      'Xác nhận xóa phiên đã nạp',
+      { isDanger: true, confirmText: '🗑️ Xóa phiên', cancelText: 'Hủy' }
     );
     if (!ok) return;
     
+    const keys = this.getStorageKeys();
     // Xóa khỏi cả Viết và Nói
     this.savedSpeakingTexts = this.savedSpeakingTexts.filter(t => t.id !== id);
-    localStorage.setItem('eng_speak_custom_texts', JSON.stringify(this.savedSpeakingTexts));
+    localStorage.setItem(keys.speakTexts, JSON.stringify(this.savedSpeakingTexts));
     
     this.savedCustomTexts = this.savedCustomTexts.filter(t => t.id !== id);
-    localStorage.setItem('eng_write_custom_texts', JSON.stringify(this.savedCustomTexts));
+    localStorage.setItem(keys.writeTexts, JSON.stringify(this.savedCustomTexts));
     
     this.updateCustomTextsCount();
     this.populateSavedTextsDropdown();
@@ -656,13 +695,16 @@ class TypingApp {
       this.loadPassage(0);
     }
 
-    Notify.success('Đã xóa bài học khỏi danh sách!');
+    Notify.success('🗑️ Đã xóa phiên bài học khỏi danh sách!');
   }
 
   updateCustomTextsCount() {
+    const count = this.currentMode === 'speaking' ? this.savedSpeakingTexts.length : this.savedCustomTexts.length;
     if (this.dom.myTextsCount) {
-      const count = this.currentMode === 'speaking' ? this.savedSpeakingTexts.length : this.savedCustomTexts.length;
       this.dom.myTextsCount.textContent = count;
+    }
+    if (this.dom.menuTextsCount) {
+      this.dom.menuTextsCount.textContent = count;
     }
   }
 
@@ -886,6 +928,127 @@ class TypingApp {
       this.dom.selectSavedTexts.value = this.currentSpeakingPassage.id;
     }
     this.updateSpeakingStage();
+  }
+
+  // =================================================================
+  // Đa Ngôn Ngữ: Tiếng Anh (English 🇬🇧) & Tiếng Trung (中文 🇨🇳)
+  // =================================================================
+  applyLanguageUI() {
+    const isZh = this.currentLanguage === 'zh';
+
+    const ukSvg = `
+      <svg class="flag-icon flag-svg" viewBox="0 0 60 40" width="22" height="15" aria-hidden="true">
+        <clipPath id="uk-clip"><rect width="60" height="40" rx="3"/></clipPath>
+        <g clip-path="url(#uk-clip)">
+          <rect width="60" height="40" fill="#012169"/>
+          <path d="M0 0 L60 40 M60 0 L0 40" stroke="#fff" stroke-width="8"/>
+          <path d="M0 0 L60 40 M60 0 L0 40" stroke="#C8102E" stroke-width="4"/>
+          <path d="M30 0 v40 M0 20 h60" stroke="#fff" stroke-width="12"/>
+          <path d="M30 0 v40 M0 20 h60" stroke="#C8102E" stroke-width="7"/>
+        </g>
+      </svg>
+    `;
+
+    const cnSvg = `
+      <svg class="flag-icon flag-svg" viewBox="0 0 60 40" width="22" height="15" aria-hidden="true">
+        <clipPath id="cn-clip"><rect width="60" height="40" rx="3"/></clipPath>
+        <g clip-path="url(#cn-clip)">
+          <rect width="60" height="40" fill="#DE2910"/>
+          <polygon fill="#FFDE00" points="10,4 12,10 18,10 13,14 15,20 10,16 5,20 7,14 2,10 8,10"/>
+          <polygon fill="#FFDE00" transform="translate(20, 5) rotate(23) scale(0.38)" points="0,-4 1.17,-0.4 4.75,-0.4 1.85,1.7 2.94,5.2 0,3.1 -2.94,5.2 -1.85,1.7 -4.75,-0.4 -1.17,-0.4"/>
+          <polygon fill="#FFDE00" transform="translate(24, 9) rotate(45) scale(0.38)" points="0,-4 1.17,-0.4 4.75,-0.4 1.85,1.7 2.94,5.2 0,3.1 -2.94,5.2 -1.85,1.7 -4.75,-0.4 -1.17,-0.4"/>
+          <polygon fill="#FFDE00" transform="translate(24, 15) rotate(0) scale(0.38)" points="0,-4 1.17,-0.4 4.75,-0.4 1.85,1.7 2.94,5.2 0,3.1 -2.94,5.2 -1.85,1.7 -4.75,-0.4 -1.17,-0.4"/>
+          <polygon fill="#FFDE00" transform="translate(20, 20) rotate(-20) scale(0.38)" points="0,-4 1.17,-0.4 4.75,-0.4 1.85,1.7 2.94,5.2 0,3.1 -2.94,5.2 -1.85,1.7 -4.75,-0.4 -1.17,-0.4"/>
+        </g>
+      </svg>
+    `;
+
+    if (this.dom.langFlagContainer) {
+      this.dom.langFlagContainer.innerHTML = isZh ? cnSvg : ukSvg;
+    }
+    if (this.dom.langToggleText) {
+      this.dom.langToggleText.textContent = isZh ? 'Tiếng Trung' : 'Tiếng Anh';
+    }
+    if (this.dom.btnLangToggle) {
+      this.dom.btnLangToggle.title = isZh 
+        ? 'Đang học Tiếng Trung (Nhấn để chuyển sang Tiếng Anh)' 
+        : 'Đang học Tiếng Anh (Nhấn để chuyển sang Tiếng Trung)';
+    }
+
+    if (this.dom.logoTitle) {
+      this.dom.logoTitle.textContent = isZh ? 'ChineseWriterAndSpeaking' : 'EnglishWriterAndSpeaking';
+    }
+    if (this.dom.logoSubline) {
+      this.dom.logoSubline.textContent = isZh ? 'Luyện Viết & Nói Tiếng Trung (中文)' : 'Luyện Viết & Nói Tiếng Anh';
+    }
+
+    if (this.dom.currentModeTag) {
+      if (this.currentMode === 'speaking') {
+        this.dom.currentModeTag.innerHTML = isZh 
+          ? '🎙️ <strong>Chế độ Luyện Nói Tiếng Trung (中文)</strong>' 
+          : '🎙️ <strong>Chế độ Luyện Nói Tiếng Anh</strong>';
+      } else {
+        this.dom.currentModeTag.innerHTML = isZh 
+          ? '✍️ <strong>Chế độ Luyện Viết Tiếng Trung (HSK)</strong>' 
+          : '✍️ <strong>Chế độ Luyện Viết Chuẩn</strong>';
+      }
+    }
+  }
+
+  toggleLanguage() {
+    const nextLang = this.currentLanguage === 'zh' ? 'en' : 'zh';
+    this.setLanguage(nextLang, true);
+  }
+
+  updateVoiceSelectors() {
+    const isZh = this.currentLanguage === 'zh';
+    const writeSelect = this.dom.voiceGenderSelect;
+    const speakSelect = this.dom.speakVoiceGenderSelect;
+
+    const enOptions = `
+      <option value="google" selected>🌐 Google US (Chuẩn)</option>
+      <option value="female">👩 Nữ bản xứ (US)</option>
+      <option value="male">👨 Nam bản xứ (US)</option>
+      <option value="uk">🇬🇧 Giọng Anh - Anh (UK)</option>
+    `;
+
+    const zhOptions = `
+      <option value="google" selected>🌐 Google 普通话 (Chuẩn)</option>
+      <option value="female">👩 Nữ bản xứ (Trung Quốc)</option>
+      <option value="male">👨 Nam bản xứ (Trung Quốc)</option>
+      <option value="tw">🇹🇼 Giọng Đài Loan (Taiwan)</option>
+    `;
+
+    const opts = isZh ? zhOptions : enOptions;
+    if (writeSelect) {
+      const cur = writeSelect.value;
+      writeSelect.innerHTML = opts;
+      if (['google', 'female', 'male', 'uk', 'tw'].includes(cur)) writeSelect.value = cur;
+    }
+    if (speakSelect) {
+      const cur = speakSelect.value;
+      speakSelect.innerHTML = opts;
+      if (['google', 'female', 'male', 'uk', 'tw'].includes(cur)) speakSelect.value = cur;
+    }
+  }
+
+  setLanguage(lang, reloadUI = true) {
+    if (this.currentLanguage === lang && !reloadUI) return;
+    this.currentLanguage = lang;
+    localStorage.setItem('app_current_language', lang);
+    this.applyLanguageUI();
+    this.updateVoiceSelectors();
+    this.loadCustomTextsFromStorage();
+    this.loadFilterTexts();
+
+    if (reloadUI) {
+      if (this.currentMode === 'speaking') {
+        this.loadSpeakingPassage(0);
+      } else {
+        this.loadPassage(0);
+      }
+      Notify.success(lang === 'zh' ? '🇨🇳 Đã chuyển sang chế độ Luyện Tiếng Trung (中文)!' : '🇬🇧 Đã chuyển sang chế độ Luyện Tiếng Anh!');
+    }
   }
 
   // =================================================================
@@ -1131,6 +1294,12 @@ class TypingApp {
       }
     };
 
+    if (this.currentLanguage === 'zh' && window.chineseEngine) {
+      this.isSpeaking = true;
+      window.chineseEngine.speak(cleanText, rate, this.selectedVoiceGender, finishCallback, finishCallback);
+      return;
+    }
+
     if (this.selectedVoiceGender === 'google') {
       this.playGoogleTTS(
         cleanText,
@@ -1147,24 +1316,32 @@ class TypingApp {
 
   speakWord(word) {
     if (!this.autoSpeakWord || !this.soundEnabled || !word) return;
-    const clean = word.toLowerCase().replace(/[^a-z0-9']/g, '').trim();
+    const clean = word.trim();
     if (!clean || clean.length === 0) return;
 
     if (this.isSpeaking) return; // Don't interrupt full passage playback
 
     const rate = this.dom.writeRateSelect ? parseFloat(this.dom.writeRateSelect.value || '1.0') : 1.0;
 
+    if (this.currentLanguage === 'zh' && window.chineseEngine) {
+      window.chineseEngine.speak(clean, rate, this.selectedVoiceGender);
+      return;
+    }
+
+    const enClean = clean.toLowerCase().replace(/[^a-z0-9']/g, '').trim();
+    if (!enClean) return;
+
     if (this.selectedVoiceGender === 'google') {
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(clean)}&tl=en&client=tw-ob`;
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(enClean)}&tl=en&client=tw-ob`;
       const audio = new Audio(url);
       try {
         audio.playbackRate = rate;
       } catch (e) {}
       audio.play().catch(() => {
-        this.speakWebSpeechWord(clean, rate);
+        this.speakWebSpeechWord(enClean, rate);
       });
     } else {
-      this.speakWebSpeechWord(clean, rate);
+      this.speakWebSpeechWord(enClean, rate);
     }
   }
 
@@ -1188,6 +1365,10 @@ class TypingApp {
     const text = this.currentPassage.text;
     if (charIndex < 0 || charIndex >= text.length) return '';
 
+    if (this.currentLanguage === 'zh') {
+      return text[charIndex].trim();
+    }
+
     let start = charIndex;
     while (start > 0 && !/\s/.test(text[start - 1])) {
       start--;
@@ -1203,6 +1384,12 @@ class TypingApp {
     if (!this.currentPassage || !this.currentPassage.text) return '';
     const text = this.currentPassage.text;
     let idx = charIndex - 1;
+    if (idx < 0) return '';
+
+    if (this.currentLanguage === 'zh') {
+      return text[idx].trim();
+    }
+
     while (idx >= 0 && /\s/.test(text[idx])) {
       idx--;
     }
@@ -1351,7 +1538,7 @@ class TypingApp {
     targetText = targetText.replace(/\+/g, ' ').trim();
 
     if (!targetText) {
-      Notify.warning('Chưa có bài luyện nói nào để phát âm mẫu. Hãy nạp bài mới!');
+      Notify.warning(this.currentLanguage === 'zh' ? 'Chưa có bài luyện nói tiếng Trung nào để phát âm mẫu. Hãy nạp bài mới!' : 'Chưa có bài luyện nói nào để phát âm mẫu. Hãy nạp bài mới!');
       return;
     }
     if (this.isSpeaking) {
@@ -1374,6 +1561,12 @@ class TypingApp {
         this.dom.btnSpeakListenSample.textContent = '🔊 Nghe mẫu';
       }
     };
+
+    if (this.currentLanguage === 'zh' && window.chineseEngine) {
+      this.isSpeaking = true;
+      window.chineseEngine.speak(targetText, rate, gender, finishCallback, finishCallback);
+      return;
+    }
 
     if (gender === 'google') {
       this.playGoogleTTS(
@@ -1405,7 +1598,9 @@ class TypingApp {
       if (this.dom.btnSubmodeFree) this.dom.btnSubmodeFree.classList.remove('active');
       if (this.dom.speakingScoreHeader) this.dom.speakingScoreHeader.style.display = 'flex';
       if (this.dom.recorderStatus) {
-        this.dom.recorderStatus.textContent = 'Nhấn nút micro ở trên, cho phép truy cập micro và đọc to đoạn văn mẫu bên trái.';
+        this.dom.recorderStatus.textContent = this.currentLanguage === 'zh'
+          ? 'Nhấn nút micro ở trên, cho phép truy cập micro và đọc to đoạn văn tiếng Trung bên trái.'
+          : 'Nhấn nút micro ở trên, cho phép truy cập micro và đọc to đoạn văn mẫu bên trái.';
       }
     }
   }
@@ -1420,7 +1615,7 @@ class TypingApp {
 
   async startRecording() {
     if (this.speakingSubMode === 'sample' && !this.currentSpeakingPassage) {
-      Notify.warning('Vui lòng nạp hoặc chọn một bài luyện nói tiếng Anh trước khi thu âm!');
+      Notify.warning(this.currentLanguage === 'zh' ? 'Vui lòng nạp hoặc chọn một bài luyện nói tiếng Trung trước khi thu âm!' : 'Vui lòng nạp hoặc chọn một bài luyện nói trước khi thu âm!');
       return;
     }
 
@@ -1467,7 +1662,8 @@ class TypingApp {
       const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognitionClass) {
         this.speechRecognition = new SpeechRecognitionClass();
-        this.speechRecognition.lang = 'en-US';
+        const isZh = this.currentLanguage === 'zh';
+        this.speechRecognition.lang = isZh ? (this.selectedVoiceGender === 'tw' ? 'zh-TW' : 'zh-CN') : 'en-US';
         this.speechRecognition.continuous = true;
         this.speechRecognition.interimResults = true;
         this.lastSpokenTranscript = '';
@@ -1488,7 +1684,9 @@ class TypingApp {
       if (this.dom.recorderStatus) {
         this.dom.recorderStatus.textContent = this.speakingSubMode === 'free'
           ? '🎙️ Đang thu âm tự do... Hãy nói thoải mái!'
-          : '🎙️ Đang thu âm & nhận diện giọng nói... Hãy đọc to đoạn văn tiếng Anh bên trái!';
+          : (this.currentLanguage === 'zh' 
+              ? '🎙️ Đang thu âm & nhận diện giọng nói... Hãy đọc to đoạn văn tiếng Trung bên trái!'
+              : '🎙️ Đang thu âm & nhận diện giọng nói... Hãy đọc to đoạn văn tiếng Anh bên trái!');
       }
     } catch (err) {
       Notify.error('Không thể truy cập Microphone. Vui lòng cho phép quyền truy cập Micro trên trình duyệt để sử dụng tính năng thu âm.');
@@ -2155,12 +2353,20 @@ class TypingApp {
     }
   }
 
-  // Normalize quotes and spaces for seamless typing
+  // Normalize quotes, fullwidth punctuation and spaces for seamless typing
   cleanCharForTyping(char) {
     if (!char) return '';
     if (char === '’' || char === '‘' || char === '`') return "'";
     if (char === '“' || char === '”') return '"';
     if (char === '—' || char === '–') return '-';
+    if (char === '，') return ',';
+    if (char === '。') return '.';
+    if (char === '！') return '!';
+    if (char === '？') return '?';
+    if (char === '：') return ':';
+    if (char === '；') return ';';
+    if (char === '（') return '(';
+    if (char === '）') return ')';
     if (char === '\u00a0' || char === '\t') return ' ';
     return char;
   }
@@ -3314,6 +3520,69 @@ class TypingApp {
       });
     }
 
+    // Menu Session Management Action Events
+    if (this.dom.btnMenuAddText) {
+      this.dom.btnMenuAddText.addEventListener('click', () => {
+        if (this.dom.menuDropdownWrapper) this.dom.menuDropdownWrapper.classList.remove('is-open');
+        this.openCustomModal();
+      });
+    }
+
+    if (this.dom.btnMenuManageTexts) {
+      this.dom.btnMenuManageTexts.addEventListener('click', () => {
+        if (this.dom.menuDropdownWrapper) this.dom.menuDropdownWrapper.classList.remove('is-open');
+        const isSpeak = this.currentMode === 'speaking';
+        const titleEl = document.getElementById('manage-modal-title');
+        const subEl = document.getElementById('manage-modal-subtitle');
+        if (titleEl) titleEl.textContent = isSpeak ? '📚 Danh sách bài luyện nói đã nạp' : '📚 Danh sách bài luyện viết đã nạp';
+        if (subEl) subEl.textContent = isSpeak ? 'Chọn bất kỳ bài nào bên dưới để luyện nói hoặc xóa bài không dùng:' : 'Chọn bất kỳ bài nào bên dưới để luyện viết hoặc xóa bài không dùng:';
+        this.renderManageTextsList();
+        this.dom.manageTextsModal.classList.add('active');
+      });
+    }
+
+    if (this.dom.btnMenuDeleteCurrent) {
+      this.dom.btnMenuDeleteCurrent.addEventListener('click', async () => {
+        if (this.dom.menuDropdownWrapper) this.dom.menuDropdownWrapper.classList.remove('is-open');
+        const isSpeak = this.currentMode === 'speaking';
+        const currentItem = isSpeak ? this.currentSpeakingPassage : this.currentPassage;
+        if (!currentItem || !currentItem.id) {
+          Notify.warning('Hiện tại chưa có phiên bài học nào được chọn để xóa.');
+          return;
+        }
+        await this.deleteCustomText(currentItem.id);
+      });
+    }
+
+    if (this.dom.btnMenuDeleteAll) {
+      this.dom.btnMenuDeleteAll.addEventListener('click', async () => {
+        if (this.dom.menuDropdownWrapper) this.dom.menuDropdownWrapper.classList.remove('is-open');
+        if (this.savedCustomTexts.length === 0 && this.savedSpeakingTexts.length === 0) {
+          Notify.warning('Danh sách phiên bài học hiện đang trống.');
+          return;
+        }
+        const ok = await Notify.confirm(
+          'Bạn có chắc chắn muốn XÓA TOÀN BỘ các phiên bài học đã nạp không?\nHành động này sẽ làm trống toàn bộ danh sách bài viết & bài nói.',
+          'Xác nhận xóa tất cả phiên',
+          { isDanger: true, confirmText: '🗑️ Xóa tất cả', cancelText: 'Hủy' }
+        );
+        if (ok) {
+          this.savedCustomTexts = [];
+          this.savedSpeakingTexts = [];
+          this.currentPassage = null;
+          this.currentSpeakingPassage = null;
+          localStorage.removeItem('eng_write_custom_texts');
+          localStorage.removeItem('eng_speak_custom_texts');
+          this.updateCustomTextsCount();
+          this.populateSavedTextsDropdown();
+          this.renderManageTextsList();
+          this.loadFilterTexts();
+          this.loadPassage(0);
+          Notify.success('🗑️ Đã xóa toàn bộ các phiên đã nạp thành công!');
+        }
+      });
+    }
+
     // User Guide Modal Events
     if (this.dom.btnOpenGuideModal) {
       this.dom.btnOpenGuideModal.addEventListener('click', () => {
@@ -3425,6 +3694,13 @@ class TypingApp {
     window.addEventListener('resize', () => {
       this.updateCaretPosition();
     });
+
+    // Unified Language Switcher Toggle
+    if (this.dom.btnLangToggle) {
+      this.dom.btnLangToggle.addEventListener('click', () => {
+        this.toggleLanguage();
+      });
+    }
 
     // Mode Switch Tabs (Luyện Viết / Luyện Nói)
     if (this.dom.tabBtnWriting) {

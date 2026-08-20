@@ -31,6 +31,24 @@
       </div>
 
       <div class="header-actions">
+        <!-- Unified Language Switcher Button (1 Nút Duy Nhất Gọn Gàng) -->
+        <button type="button" class="btn-icon btn-lang-toggle" id="btn-lang-toggle" title="Nhấn để đổi ngôn ngữ (Tiếng Anh ⇄ Tiếng Trung)">
+          <span class="lang-flag-container" id="lang-flag-container">
+            <svg class="flag-icon flag-svg" viewBox="0 0 60 40" width="22" height="15" aria-hidden="true">
+              <clipPath id="uk-clip"><rect width="60" height="40" rx="3"/></clipPath>
+              <g clip-path="url(#uk-clip)">
+                <rect width="60" height="40" fill="#012169"/>
+                <path d="M0 0 L60 40 M60 0 L0 40" stroke="#fff" stroke-width="8"/>
+                <path d="M0 0 L60 40 M60 0 L0 40" stroke="#C8102E" stroke-width="4"/>
+                <path d="M30 0 v40 M0 20 h60" stroke="#fff" stroke-width="12"/>
+                <path d="M30 0 v40 M0 20 h60" stroke="#C8102E" stroke-width="7"/>
+              </g>
+            </svg>
+          </span>
+          <span class="lang-toggle-text" id="lang-toggle-text">Tiếng Anh</span>
+          <span class="lang-toggle-swap-icon" title="Chuyển đổi ngôn ngữ">⇄</span>
+        </button>
+
         <div class="streak-badge" id="streak-badge" title="Chuỗi ngày luyện tập">
           🔥 <span id="streak-count">1</span> ngày
         </div>
@@ -82,6 +100,21 @@
 
             <div class="menu-divider"></div>
 
+            <!-- Quản lý phiên bài học (Tất cả tính năng: nạp mới, xem danh sách, sửa & xóa phiên) -->
+            <button type="button" class="menu-dropdown-item" id="btn-menu-manage-texts"
+              title="Xem danh sách, nạp bài mới, chỉnh sửa hoặc xóa các phiên đã nạp">
+              <span class="menu-item-icon">📚</span>
+              <span class="menu-item-info">
+                <span class="menu-item-title">
+                  <span>Quản lý phiên bài học</span>
+                  <span class="menu-item-badge" id="menu-texts-count">0</span>
+                </span>
+                <span class="menu-item-desc">Nạp mới, xem, sửa & xóa bài</span>
+              </span>
+            </button>
+
+            <div class="menu-divider"></div>
+
             <!-- User Guide Modal -->
             <button type="button" class="menu-dropdown-item" id="btn-open-guide-modal"
               title="Xem hướng dẫn sử dụng toàn diện">
@@ -105,7 +138,7 @@
         </div>
 
         <button class="btn-icon btn-primary-accent" id="btn-custom-text"
-          title="Nạp thêm đoạn văn tiếng Anh mới để luyện tập">
+          title="Nạp thêm bài học mới để luyện tập">
           📥 <span>Nạp bài mới</span>
         </button>
       </div>
@@ -867,10 +900,24 @@
           <div class="guide-item-card">
             <div class="guide-item-icon">📥</div>
             <div class="guide-item-body">
-              <h4>Nạp thêm bài học mới</h4>
-              <p>Bấm nút <strong>"📥 Nạp bài mới"</strong> ở góc trên bên phải, nhập tiêu đề và dán đoạn văn tiếng Anh
-                cần luyện tập. Bạn có thể chọn <em>Giữ nguyên xuống dòng</em> hoặc <em>Nối thành 1 đoạn liền mạch</em>.
-              </p>
+              <h4>1. Nạp thêm dữ liệu phiên mới</h4>
+              <p>Bấm nút <strong>"📥 Nạp bài mới"</strong> ở thanh trên cùng hoặc chọn <strong>"Menu ☰ ➡️ Nạp dữ liệu phiên mới"</strong>. Nhập tiêu đề và dán đoạn văn tiếng Anh, chọn định dạng <em>Giữ nguyên xuống dòng</em> hoặc <em>Viết ngang liền mạch</em> rồi bấm Bắt đầu.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">🗑️</div>
+            <div class="guide-item-body">
+              <h4>2. Xóa phiên đã nạp</h4>
+              <p>Mở <strong>"Menu ☰"</strong> và chọn <strong>"Xóa phiên đang chọn"</strong> để xóa nhanh bài hiện tại, hoặc chọn <strong>"Xóa tất cả phiên"</strong> nếu muốn làm trống toàn bộ danh sách. Bạn cũng có thể mở <strong>"Danh sách phiên"</strong> để xóa từng bài cụ thể.</p>
+            </div>
+          </div>
+
+          <div class="guide-item-card">
+            <div class="guide-item-icon">✏️</div>
+            <div class="guide-item-body">
+              <h4>3. Chỉnh sửa & Chuyển đổi bài học</h4>
+              <p>Bấm nút <strong>"✏️ Sửa bài"</strong> để thay đổi nội dung bài đang mở, hoặc chọn từ danh sách dropdown để chuyển nhanh giữa các bài đã nạp.</p>
             </div>
           </div>
         </div>
@@ -950,6 +997,7 @@
   <!-- Zero-Config Sync & Audio Encoding Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.min.js"></script>
+  <script src="chinese.js?v=3.1"></script>
   <script src="notification.js?v=3.1"></script>
   <script src="tracker.js?v=3.1"></script>
   <script src="app.js?v=3.1"></script>
